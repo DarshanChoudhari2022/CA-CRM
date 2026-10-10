@@ -79,7 +79,7 @@ export default async function EmployeesPage() {
                     {employee.accountLinked ? (
                       <StatusPill value="linked" />
                     ) : (
-                      <AccountButton employeeId={employee.id} />
+                      <AccountButton employeeId={employee.id} accountLinked={employee.accountLinked} />
                     )}
                   </td>
                 </tr>

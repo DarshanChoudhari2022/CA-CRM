@@ -202,6 +202,21 @@ a {
   color: var(--red);
   border: 1px solid #ffc9c3;
 }
+.account-actions {
+  display: grid;
+  gap: 8px;
+  min-width: 190px;
+}
+.account-actions-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+.account-actions a {
+  color: #1e5bb8;
+  text-decoration: underline;
+}
 .form-error {
   padding: 10px 12px;
   border-radius: 8px;
