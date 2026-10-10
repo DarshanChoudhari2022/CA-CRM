@@ -5,11 +5,22 @@ export default function LoginPage() {
   return (
     <main className="auth-page">
       <section className="auth-visual">
-        <Brand />
-        <div className="auth-copy">
-          <h1>PSB Workspace</h1>
+        <div className="auth-visual-inner">
+          <Brand />
+          <div className="auth-copy">
+            <span className="auth-kicker">Private workspace</span>
+            <h1>
+              PSB
+              <br />
+              Workspace
+            </h1>
+            <div className="auth-rule" />
+            <p>One calm place for the PSB team.</p>
+          </div>
+          <small>PSB &amp; Associates LLP</small>
         </div>
-        <small style={{ color: "#8fa2b0" }}>Private access</small>
+        <div className="auth-orbit auth-orbit-one" />
+        <div className="auth-orbit auth-orbit-two" />
       </section>
       <section className="auth-form-wrap">
         <LoginForm />

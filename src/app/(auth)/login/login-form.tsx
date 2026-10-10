@@ -29,7 +29,14 @@ export function LoginForm() {
         }
       }}
     >
-      <h2>Sign in</h2>
+      <div className="auth-form-topline">
+        <span>PSB WORKSPACE</span>
+        <span>01</span>
+      </div>
+      <h2>
+        Welcome back<span>.</span>
+      </h2>
+      <p className="auth-form-intro">Sign in to continue.</p>
       {error && (
         <div className="form-error" role="alert">
           {error}
