@@ -36,7 +36,7 @@ try {
     if (existing) return { created: false };
     const [org] = await tx`select id from public.organizations order by created_at limit 1`;
     const [branch] =
-      await tx`select id from public.branches where organization_id=${org.id} order by created_at limit 1`;
+      await tx`select id from public.branches where organization_id=${org.id} order by id limit 1`;
     const [policy] =
       await tx`select id from public.attendance_policies where organization_id=${org.id} order by effective_from desc limit 1`;
     await tx`insert into public.profiles(user_id,organization_id,full_name,role,password_change_required) values(${authUser.id},${org.id},${name},'admin',${!!temporaryPassword})`;
