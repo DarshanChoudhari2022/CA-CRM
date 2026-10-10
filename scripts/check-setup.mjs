@@ -6,8 +6,15 @@ try {
   const [profiles] = await sql`select count(*)::int as count from public.profiles`;
   const [migrations] =
     await sql`select count(*)::int as count from supabase_migrations.schema_migrations where version like '20261010%'`;
+  const [jobs] =
+    await sql`select count(*)::int as count from cron.job where jobname='psb-daily-attendance-reconciliation'`;
   console.log(
-    JSON.stringify({ authUsers: auth.count, portalProfiles: profiles.count, attendanceMigrations: migrations.count }),
+    JSON.stringify({
+      authUsers: auth.count,
+      portalProfiles: profiles.count,
+      attendanceMigrations: migrations.count,
+      reconciliationJobs: jobs.count,
+    }),
   );
 } finally {
   await sql.end();

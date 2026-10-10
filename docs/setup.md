@@ -2,7 +2,7 @@
 
 ## Current project state
 
-The web application and four database migrations are implemented. All four migrations are applied to Supabase project ostvciecjwbzyzzyksnf. The database currently reports zero Auth users and zero portal profiles. Create the first administrator before testing protected routes.
+The web application and five database migrations are implemented. All five migrations are applied to Supabase project ostvciecjwbzyzzyksnf. The database currently reports zero Auth users and zero portal profiles. Create the first administrator before testing protected routes.
 
 ## First administrator
 
@@ -47,6 +47,6 @@ Before production, implement/test the invitation route with SUPABASE_SERVICE_ROL
 
 The current leave engine allocates fixed yearly balances and excludes weekly offs and configured holidays from a request. Carry-forward, monthly accrual, encashment, negative balances, compensatory leave, attachments and payroll calculations are intentionally outside Release 1.
 
-Month closure locks attendance operations in the database. A later migration should materialize immutable report snapshots if signed historical report retention is required beyond the current revision/audit records.
+Daily reconciliation materializes missing working days at 12:15 AM Asia/Kolkata. Month closure runs catch-up reconciliation, checks blockers, locks attendance operations and stores an immutable summary/detail snapshot with a version number.
 
 The app currently uses in-app approval visibility. Email, WhatsApp and n8n notifications are future integrations.
