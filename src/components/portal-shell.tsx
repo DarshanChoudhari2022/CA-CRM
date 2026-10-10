@@ -42,7 +42,7 @@ export function PortalShell({ children, identity }: { children: React.ReactNode;
           <div className="mobile-brand">
             <Brand compact />
           </div>
-          <div className="topbar-date">PSB team operations · Asia/Kolkata</div>
+          <div className="topbar-date">PSB Workspace</div>
           <form action={signOut}>
             <button className="button button-secondary" type="submit">
               <LogOut size={16} /> Sign out

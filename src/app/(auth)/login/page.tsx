@@ -7,15 +7,9 @@ export default function LoginPage() {
       <section className="auth-visual">
         <Brand />
         <div className="auth-copy">
-          <span className="eyebrow">Firm management portal</span>
-          <h1>
-            Your team.
-            <br />
-            One clear view.
-          </h1>
-          <p>Attendance, leave and approvals designed around the working rhythm of PSB Associates.</p>
+          <h1>PSB Workspace</h1>
         </div>
-        <small style={{ color: "#8fa2b0" }}>Secure internal access · Asia/Kolkata</small>
+        <small style={{ color: "#8fa2b0" }}>Private access</small>
       </section>
       <section className="auth-form-wrap">
         <LoginForm />

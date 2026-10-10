@@ -7,9 +7,7 @@ export function LoginForm() {
   const [state, action, pending] = useActionState(login, {});
   return (
     <form action={action} className="auth-form">
-      <span className="eyebrow">Internal portal</span>
-      <h2>Welcome back.</h2>
-      <p>Sign in with your PSB work account.</p>
+      <h2>Sign in</h2>
       {state.error && (
         <div className="form-error" role="alert">
           {state.error}
@@ -31,9 +29,7 @@ export function LoginForm() {
       >
         {pending ? "Signing in…" : "Sign in"}
       </button>
-      <p style={{ fontSize: 13, marginTop: 18 }}>
-        Access is invitation-only. Contact your administrator if your account is not active.
-      </p>
+      <p style={{ fontSize: 13, marginTop: 18 }}>Need access? Contact your administrator.</p>
     </form>
   );
 }

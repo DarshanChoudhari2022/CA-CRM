@@ -118,12 +118,34 @@ a {
 }
 .brand strong {
   display: block;
-  letter-spacing: 0.04em;
+  font-family: var(--font-brand-serif), Georgia, serif;
+  font-weight: 400;
+  font-size: 22px;
+  line-height: 1.35;
+  letter-spacing: -0.035em;
 }
 .brand small {
   display: block;
+  font-family: var(--font-brand-sans), Arial, sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.045em;
   opacity: 0.7;
-  margin-top: 2px;
+  margin-top: 6px;
+}
+.brand > div {
+  border-left: 1px solid currentColor;
+  padding-left: 18px;
+}
+.sidebar .brand small {
+  font-size: 10px;
+}
+.sidebar .brand > div {
+  padding-left: 10px;
+}
+.auth-visual .brand img {
+  width: 56px;
+  height: 56px;
 }
 
 .field {
@@ -472,6 +494,9 @@ tbody tr:last-child td {
 }
 .mobile-brand {
   display: none;
+}
+.sidebar .brand strong {
+  font-size: 14px;
 }
 
 @media (max-width: 1000px) {
