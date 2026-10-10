@@ -15,7 +15,6 @@ export default function LoginPage() {
               Workspace
             </h1>
             <div className="auth-rule" />
-            <p>One calm place for the PSB team.</p>
           </div>
           <small>PSB &amp; Associates LLP</small>
         </div>
