@@ -1,78 +1,25 @@
-# PSB Associates CRM
+# PSB Associates — Firm Management Portal
 
-Internal management portal for P S B & Associates LLP to manage employees, attendance, leave, approvals, and HR records.
+A modular portal for P S B & Associates LLP. **Release 1 is Attendance Management only.** The wider CA automation suite will be pitched after the attendance pilot.
 
-## Product direction
+## Planning documents
 
-The first release should focus on a dependable employee-management workflow:
+| Document | Contents |
+| --- | --- |
+| [Attendance PRD](docs/attendance-prd.md) | Exact features, roles, rules, acceptance criteria and proposed defaults |
+| [Design document](docs/design.md) | Screens, PSB branding, architecture, schema and transaction contracts |
+| [Implementation plan](docs/implementation-plan.md) | Work packages, dependencies, test coverage and release gates |
+| [Future suite](docs/future-suite.md) | Reference assessment, deferred modules and follow-on pitch |
 
-1. Secure sign-in with role-based access.
-2. Employee directory and employee profiles.
-3. Daily attendance with check-in/check-out, regularization, and monthly reports.
-4. Leave requests, balances, approval workflow, holidays, and leave reports.
-5. Admin dashboard with pending approvals and attendance/leave summaries.
-6. Audit history for sensitive changes.
+Status: draft specification, 10 October 2026. This repository contains documentation and branding assets; no working application, migrations or live automation has been implemented.
 
-## Roles
+Release 1 includes sign-in, minimal employee setup, daily punches, history, corrections with approval, calendars, reporting and month locking. Full leave management, payroll, biometrics, geofencing and client automation are deferred. This scope supersedes the original foundation README.
 
-- **Admin/Partner**: manage users, employees, policies, holidays, reports, and all approvals.
-- **HR/Manager**: manage assigned employees, attendance corrections, and leave approvals.
-- **Employee**: view profile, mark attendance, request leave, and view personal history.
+Proposed stack: React + TypeScript + Vite with Supabase Auth and Postgres. Shared identity and branding support later modules; attendance owns its rules.
 
-## Suggested stack
+Brand assets in public/brand/ were copied from the existing PSB website. Reproduce its CA India mark and “PSB & Associates LLP / Chartered Accountants” header treatment.
 
-- React + TypeScript + Vite for the portal UI.
-- Supabase Auth for sign-in and session management.
-- Supabase Postgres with Row Level Security for application data.
-- Supabase Storage for optional employee documents.
-- A small, versioned SQL migration set for schema and RLS policies.
+## Configuration
 
-## Initial data model
-
-- `profiles`: one row per authenticated user, role, employee link, and active status.
-- `employees`: personal, employment, department, manager, and joining information.
-- `attendance_records`: one record per employee per work date, status, times, and regularization state.
-- `leave_types`: annual/sick/casual/custom policies and accrual rules.
-- `leave_balances`: employee balances by leave type and period.
-- `leave_requests`: requested dates, reason, approval status, and approver history.
-- `holidays`: office/location-specific holiday calendar.
-- `audit_logs`: actor, action, entity, before/after values, and timestamp.
-
-Important database rules:
-
-- Enforce one attendance record per employee per date with a unique constraint.
-- Keep leave approval transitions server-validated and auditable.
-- Use RLS policies so employees can only read/write their own permitted data.
-- Keep service-role credentials server-side only.
-
-## Delivery phases
-
-### Phase 1 — Foundation
-
-Set up the app shell, branding, Supabase client, authentication, profiles, navigation, and protected routes.
-
-### Phase 2 — Employee directory
-
-Add employee CRUD, departments, reporting managers, status, onboarding fields, and search/filtering.
-
-### Phase 3 — Attendance
-
-Add daily marking, monthly calendar/table views, regularization requests, manager approval, and exports.
-
-### Phase 4 — Leave
-
-Add leave policies, balances, requests, approval queues, holiday calendar, and reports.
-
-### Phase 5 — Hardening
-
-Add audit logs, validation, permission tests, backups, error monitoring, and deployment configuration.
-
-## Local setup
-
-1. Copy `.env.example` to `.env` and fill in local values.
-2. Install dependencies after the frontend scaffold is added.
-3. Link the local Supabase CLI project with project ref `ostvciecjwbzyzzyksnf`.
-4. Apply reviewed migrations before connecting production data.
-
-Do not commit `.env`, database passwords, service-role keys, or exported employee data.
+.env.example documents placeholders; runnable setup instructions will follow the application scaffold. Keep database passwords, administrative keys, employee exports and .env files out of Git. The browser uses the publishable key with database permissions; administrative credentials stay server-side.
 
