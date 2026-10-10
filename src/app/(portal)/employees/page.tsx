@@ -3,8 +3,8 @@ import { PageHead } from "@/components/page-head";
 import { StatusPill } from "@/components/status-pill";
 import { requireIdentity } from "@/modules/identity/session";
 import { rpc } from "@/modules/portal/queries";
+import { AccountButton } from "./account-button";
 import { EmployeeForm } from "./employee-form";
-import { InviteButton } from "./invite-button";
 
 type Employee = {
   id: string;
@@ -31,11 +31,7 @@ export default async function EmployeesPage() {
   ]);
   return (
     <>
-      <PageHead
-        eyebrow="People"
-        title="Employee directory"
-        description="Employment, team and access records used by attendance and leave."
-      />
+      <PageHead eyebrow="People" title="Employee directory" description="Manage your team and their access." />
       <section className="card">
         <div className="section-title">
           <h2>{employees.length} employees</h2>
@@ -80,7 +76,11 @@ export default async function EmployeesPage() {
                     <StatusPill value={employee.status} />
                   </td>
                   <td>
-                    {employee.accountLinked ? <StatusPill value="linked" /> : <InviteButton employeeId={employee.id} />}
+                    {employee.accountLinked ? (
+                      <StatusPill value="linked" />
+                    ) : (
+                      <AccountButton employeeId={employee.id} />
+                    )}
                   </td>
                 </tr>
               ))}

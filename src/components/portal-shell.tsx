@@ -9,6 +9,7 @@ const nav = [
   ["overview", "/dashboard", "Overview"],
   ["attendance", "/attendance", "My attendance"],
   ["leave", "/leave", "Leave"],
+  ["work", "/work", "My work"],
   ["approvals", "/approvals", "Approvals"],
   ["employees", "/employees", "Employees"],
   ["reports", "/reports", "Reports"],
@@ -16,7 +17,7 @@ const nav = [
 ] as const;
 
 export function PortalShell({ children, identity }: { children: React.ReactNode; identity: PortalIdentity }) {
-  const allowed = identity.role === "employee" ? nav.slice(0, 3) : identity.role === "manager" ? nav.slice(0, 4) : nav;
+  const allowed = identity.role === "employee" ? nav.slice(0, 4) : identity.role === "manager" ? nav.slice(0, 5) : nav;
   return (
     <div className="portal">
       <aside className="sidebar">
@@ -42,13 +43,23 @@ export function PortalShell({ children, identity }: { children: React.ReactNode;
           <div className="mobile-brand">
             <Brand compact />
           </div>
-          <div className="topbar-date">PSB Workspace</div>
+          <div className="topbar-date">
+            PSB Workspace · <Link href="/change-password">Change password</Link>
+          </div>
           <form action={signOut}>
             <button className="button button-secondary" type="submit">
               <LogOut size={16} /> Sign out
             </button>
           </form>
         </header>
+        <nav className="mobile-nav" aria-label="Mobile navigation">
+          {allowed.map(([, href, label]) => (
+            <Link key={href} href={href}>
+              {label}
+            </Link>
+          ))}
+          <Link href="/change-password">Password</Link>
+        </nav>
         <main className="content">{children}</main>
       </div>
     </div>

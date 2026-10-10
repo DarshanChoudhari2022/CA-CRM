@@ -2,11 +2,13 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { requireIdentity } from "@/modules/identity/session";
 import { leaveRequestSchema } from "@/modules/leave/domain";
 
 export type LeaveState = { error?: string; success?: string };
 
 export async function submitLeave(_: LeaveState, formData: FormData): Promise<LeaveState> {
+  await requireIdentity();
   const parsed = leaveRequestSchema.safeParse({
     leaveTypeId: String(formData.get("leaveTypeId")),
     startDate: String(formData.get("startDate")),

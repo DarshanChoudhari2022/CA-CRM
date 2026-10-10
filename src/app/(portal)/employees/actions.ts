@@ -20,5 +20,5 @@ export async function addEmployee(_: EmployeeState, formData: FormData): Promise
   });
   if (error) return { error: error.message };
   revalidatePath("/employees");
-  return { success: "Employee record created. Send the account invitation after configuring the server service key." };
+  return { success: "Employee added. Select Create login in the directory to generate their credentials." };
 }

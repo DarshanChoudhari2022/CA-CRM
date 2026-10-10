@@ -2,10 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { requireIdentity } from "@/modules/identity/session";
 
 export type ActionState = { error?: string; success?: string };
 
 export async function punch(kind: "check_in" | "check_out", requestId: string): Promise<ActionState> {
+  await requireIdentity();
   const supabase = await createClient();
   const { error } = await supabase.rpc("record_attendance_punch", { p_kind: kind, p_request_id: requestId });
   if (error) return { error: error.message };
@@ -15,6 +17,7 @@ export async function punch(kind: "check_in" | "check_out", requestId: string): 
 }
 
 export async function requestCorrection(_: ActionState, formData: FormData): Promise<ActionState> {
+  await requireIdentity();
   const supabase = await createClient();
   const { error } = await supabase.rpc("request_attendance_correction", {
     p_work_date: String(formData.get("workDate")),

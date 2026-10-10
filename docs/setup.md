@@ -2,23 +2,20 @@
 
 ## Current project state
 
-The web application and five database migrations are implemented. All five migrations are applied to Supabase project ostvciecjwbzyzzyksnf. The database currently reports zero Auth users and zero portal profiles. Create the first administrator before testing protected routes.
+The web application and six database migrations are implemented and applied to Supabase project ostvciecjwbzyzzyksnf. Activate the main administrator before testing protected routes.
 
 ## First administrator
 
-1. In the Supabase dashboard for the project, open Authentication → Users and create the partner/admin user with a real work email and temporary password.
-2. Add BOOTSTRAP_ADMIN_EMAIL and BOOTSTRAP_ADMIN_NAME to the local .env.local. Do not commit this file.
-3. Run npm run bootstrap:admin. The script finds that exact Auth identity and transactionally creates the partner profile, employee PSB-001 and annual leave balances.
-4. Sign in at /login and change the temporary password through the approved recovery flow.
-5. Create a second admin/partner before enabling self-service corrections, so administrators never approve their own requests.
+1. Add SUPABASE_SERVICE_ROLE_KEY to the ignored .env.local file. Do not put it in a NEXT_PUBLIC variable.
+2. Run npm run bootstrap:admin. Defaults are office@psbassociates.in and PSB Administrator. Optional BOOTSTRAP_ADMIN_EMAIL and BOOTSTRAP_ADMIN_NAME override these.
+3. The script creates the Supabase Auth account if absent, then creates an admin profile, employee PSB-001 and annual leave balances. Its generated temporary password is displayed once.
+4. Sign in at /login and set a private password on the first-login screen.
 
-The bootstrap script is idempotent for the selected Auth user. It refuses to create an Auth account and does not print credentials.
+The bootstrap script is idempotent for the selected Auth user and preserves an existing password. It refuses to create another initial administrator when an active admin/partner exists. Failed linking after Auth creation requires account recovery through Supabase before retrying.
 
 ## Employee onboarding
 
-An admin creates an employee record in Employees. Account invitation still needs the server-side Supabase service-role key, which has not been provided. Until the invitation route is configured, create the Auth user through the Supabase dashboard and link it using a reviewed administrative operation. Do not put a service-role key in NEXT_PUBLIC variables.
-
-Before production, implement/test the invitation route with SUPABASE_SERVICE_ROLE_KEY held by the deployment platform, verify the calling user through a normal user-scoped client, then use the admin client only for invitation and identity linking.
+An admin adds an employee in Employees, then selects Create login. Copy the temporary password shown once and share it privately with that employee. The employee signs in and must choose a new password. No automatic email is sent. See [employee workspace](employee-workspace.md).
 
 ## Commands
 

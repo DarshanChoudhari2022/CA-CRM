@@ -16,6 +16,13 @@ export async function requireIdentity(): Promise<PortalIdentity> {
 
   const { data, error } = await supabase.rpc("current_portal_identity").single();
   if (error || !data) redirect("/login?error=inactive");
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("password_change_required")
+    .eq("user_id", claims.claims.sub)
+    .single();
+  if (!profile) redirect("/login?error=inactive");
+  if (profile.password_change_required) redirect("/change-password");
   const row = data as unknown as PortalIdentity;
   return row;
 }

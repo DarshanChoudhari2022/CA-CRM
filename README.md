@@ -1,4 +1,4 @@
-# PSB Associates — Firm Management Portal
+# PSB Workspace
 
 A modular internal portal for P S B & Associates LLP. Release 1 implements employee attendance and leave management; future CA practice modules remain separately scoped.
 
@@ -16,7 +16,9 @@ A modular internal portal for P S B & Associates LLP. Release 1 implements emplo
 - Monthly summary, CSV export and month close/reopen database operations.
 - Audit records for consequential actions.
 - Responsive PSB-branded portal.
-- Five applied Supabase migrations, daily reconciliation and immutable month snapshots.
+- Admin-generated employee logins, first-login password change and private credential handoff.
+- Daily work plans, progress updates and work history.
+- Six applied Supabase migrations, daily reconciliation and immutable month snapshots.
 
 External CA automation, payroll, biometrics, GPS/geofencing and full HR records are outside this release.
 
@@ -30,9 +32,9 @@ The portal is a modular monolith: Next.js supplies the web and server layer; Sup
 2. Run npm install.
 3. Run npm run dev and open http://localhost:3000.
 4. Apply migrations with npx supabase db push --db-url <connection-url>.
-5. Create the first user in Supabase Authentication, set BOOTSTRAP_ADMIN_EMAIL and BOOTSTRAP_ADMIN_NAME locally, then run npm run bootstrap:admin.
+5. Configure SUPABASE_SERVICE_ROLE_KEY locally, then run npm run bootstrap:admin to create office@psbassociates.in as the main admin.
 
-The supplied project already has the five attendance/leave migrations applied. It currently has no Auth users, so the controlled administrator bootstrap is still required.
+The supplied project has all six migrations applied. Administrator activation requires the server-side service-role key. See [employee workspace](docs/employee-workspace.md) for account creation and employee capabilities.
 
 ## Quality checks
 
