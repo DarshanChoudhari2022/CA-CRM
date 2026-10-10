@@ -1,0 +1,131 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { PageHead } from "@/components/page-head";
+import { createClient } from "@/lib/supabase/server";
+import { type CrmOption, type CrmRecord, crmModules, isCrmModule } from "@/modules/crm/config";
+import { requireIdentity } from "@/modules/identity/session";
+import { SupportTools } from "../support-tools";
+import { DocumentUpload } from "./document-upload";
+import { ConvertButton, PaymentForm, RecordForm } from "./record-form";
+
+export default async function CrmPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ module: string }>;
+  searchParams: Promise<{ q?: string; status?: string; page?: string }>;
+}) {
+  const { module } = await params;
+  if (!isCrmModule(module)) notFound();
+  const identity = await requireIdentity();
+  const admin = ["admin", "partner"].includes(identity.role);
+  const client = await createClient();
+  const filters = await searchParams;
+  const page = Math.max(1, Math.min(100000, Number.parseInt(filters.page ?? "1", 10) || 1));
+  const search = new URLSearchParams({ q: filters.q ?? "", status: filters.status ?? "" });
+  let query = client
+    .from(`crm_${module}`)
+    .select("*", { count: "exact" })
+    .order("created_at", { ascending: false })
+    .order("id")
+    .range((page - 1) * 50, page * 50 - 1);
+  if (filters.status && crmModules[module].statuses.some((s) => s === filters.status))
+    query = query.eq("status", filters.status);
+  if (filters.q) query = query.ilike("title", `%${filters.q.replace(/[%_]/g, "").slice(0, 100)}%`);
+  const [records, clients, employees] = await Promise.all([
+    query,
+    client.from("crm_clients").select("id,title").order("title"),
+    client.from("employees").select("id,full_name").eq("active", true),
+  ]);
+  if (records.error) throw new Error(records.error.message);
+  const items = (records.data ?? []) as CrmRecord[];
+  const options = (clients.data ?? []) as CrmOption[];
+  const people = (employees.data ?? []).map((e) => ({ id: e.id, title: e.full_name }));
+  const payments =
+    module === "invoices" ? await client.rpc("crm_invoice_receipts", { p_ids: items.map((i) => i.id) }) : null;
+  if (payments?.error) throw new Error("Payment totals unavailable.");
+  const receipts = (payments?.data ?? []) as Array<{ invoice_id: string; received: number }>;
+  return (
+    <>
+      <PageHead eyebrow="CA CRM" title={crmModules[module].title} description="Your firm's records and work." />
+      <form className="filters" style={{ marginBottom: 24 }}>
+        <input
+          name="q"
+          type="search"
+          defaultValue={filters.q}
+          placeholder="Search records"
+          aria-label="Search records"
+        />
+        <select name="status" defaultValue={filters.status ?? ""} aria-label="Status">
+          <option value="">All statuses</option>
+          {crmModules[module].statuses.map((s) => (
+            <option key={s} value={s}>
+              {s.replaceAll("_", " ")}
+            </option>
+          ))}
+        </select>
+        <button className="button button-secondary" type="submit">
+          Filter
+        </button>
+        <Link className="button button-secondary" href={`/crm/${module}/export?${search}`}>
+          Export CSV
+        </Link>
+      </form>
+      <div className="filters">
+        <span>
+          {records.count ?? 0} records · Page {page}
+        </span>
+        {page > 1 && <Link href={`?${search}&page=${page - 1}`}>Previous</Link>}
+        {page * 50 < (records.count ?? 0) && <Link href={`?${search}&page=${page + 1}`}>Next</Link>}
+      </div>
+      {admin && (
+        <details className="card section">
+          <summary>Add {module === "compliance" ? "compliance task" : "record"}</summary>
+          <RecordForm module={module} clients={options} employees={people} admin />
+        </details>
+      )}
+      <section className="section grid grid-2">
+        {items.map((item) => (
+          <article className="card" key={item.id}>
+            <span className="eyebrow">{item.status.replaceAll("_", " ")}</span>
+            <h2>{item.title}</h2>
+            {(item.email || item.phone) && (
+              <p>
+                {item.email} {item.phone}
+              </p>
+            )}
+            {item.notes && <p style={{ whiteSpace: "pre-wrap" }}>{item.notes}</p>}
+            <p>{options.find((c) => c.id === item.client_id)?.title ?? ""}</p>
+            <p className="stat-note">
+              {people.find((e) => e.id === item.owner_id)?.title ?? "Unassigned"}
+              {item.due_date && ` · Due ${item.due_date}`}
+            </p>
+            {item.amount && (
+              <p>
+                INR {item.amount} · Received INR {receipts.find((p) => p.invoice_id === item.id)?.received ?? 0}
+              </p>
+            )}
+            {(admin || !["clients", "leads", "invoices"].includes(module)) && (
+              <details>
+                <summary>Edit record</summary>
+                <RecordForm module={module} item={item} clients={options} employees={people} admin={admin} />
+              </details>
+            )}
+            {module === "leads" && admin && !item.client_id && <ConvertButton id={item.id} />}
+            {module === "support" && <SupportTools id={item.id} admin={admin} />}
+            {module === "documents" && (
+              <DocumentUpload id={item.id} organizationId={identity.organizationId} storagePath={item.storage_path} />
+            )}
+            {module === "invoices" && admin && item.status === "issued" && (
+              <details>
+                <summary>Add payment</summary>
+                <PaymentForm invoice={item.id} />
+              </details>
+            )}
+          </article>
+        ))}
+      </section>
+      {!items.length && <div className="empty">No records match these filters.</div>}
+    </>
+  );
+}

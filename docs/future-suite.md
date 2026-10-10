@@ -1,6 +1,6 @@
 # Future CA Automation Suite — Scope and Pitch
 
-Version 0.1 · 10 October 2026 · Future concept, excluded from attendance delivery
+Version 0.1 · 10 October 2026 · Original attendance-first concept. Scope has since expanded at the user's request: see [CRM implementation and activation](crm-suite-delivery.md). The source assessment below is retained as historical planning, not current implementation status.
 
 ## 1. Evidence reviewed
 

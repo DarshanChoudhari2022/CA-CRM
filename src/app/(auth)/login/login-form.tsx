@@ -1,8 +1,9 @@
 "use client";
+import Link from "next/link";
 
 import { useState } from "react";
 
-export function LoginForm() {
+export function LoginForm({ audience = "employee" }: { audience?: "admin" | "employee" }) {
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
   return (
@@ -17,11 +18,11 @@ export function LoginForm() {
           const response = await fetch("/api/auth/login", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email: form.get("email"), password: form.get("password") }),
+            body: JSON.stringify({ email: form.get("email"), password: form.get("password"), audience }),
           });
           const body = await response.json();
           if (!response.ok) setError(body.error ?? "We could not sign you in.");
-          else window.location.assign("/dashboard");
+          else window.location.assign(body.redirectTo);
         } catch {
           setError("The sign-in service could not be reached. Try again.");
         } finally {
@@ -36,7 +37,7 @@ export function LoginForm() {
       <h2>
         Welcome back<span>.</span>
       </h2>
-      <p className="auth-form-intro">Sign in to continue.</p>
+      <p className="auth-form-intro">{audience === "admin" ? "Administrator access" : "Employee access"}</p>
       {error && (
         <div className="form-error" role="alert">
           {error}
@@ -59,6 +60,9 @@ export function LoginForm() {
         {pending ? "Signing in…" : "Sign in"}
       </button>
       <p style={{ fontSize: 13, marginTop: 18 }}>Need access? Contact your administrator.</p>
+      <p style={{ fontSize: 13 }}>
+        <Link href="/forgot-password">Forgot password?</Link>
+      </p>
     </form>
   );
 }

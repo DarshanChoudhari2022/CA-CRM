@@ -12,5 +12,5 @@ export async function changePassword(_: { error?: string }, form: FormData): Pro
   if (!data.user) redirect("/login");
   const { error } = await supabase.auth.updateUser({ password });
   if (error) return { error: "Password could not be updated. Use a different password or sign in again." };
-  redirect("/dashboard");
+  redirect("/modules");
 }

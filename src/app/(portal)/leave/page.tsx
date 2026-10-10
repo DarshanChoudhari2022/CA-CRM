@@ -1,6 +1,7 @@
 import { PageHead } from "@/components/page-head";
 import { StatusPill } from "@/components/status-pill";
 import { rpc } from "@/modules/portal/queries";
+import { CancelRequest } from "../operations/forms";
 import { LeaveForm } from "./leave-form";
 
 type LeaveData = {
@@ -52,6 +53,7 @@ export default async function LeavePage() {
                     <td>{request.days}</td>
                     <td>
                       <StatusPill value={request.state} />
+                      {request.state === "pending" && <CancelRequest id={request.id} kind="leave" />}
                     </td>
                   </tr>
                 ))}

@@ -1,6 +1,9 @@
 import { PageHead } from "@/components/page-head";
 import { StatusPill } from "@/components/status-pill";
+import { createClient } from "@/lib/supabase/server";
+import { requireIdentity } from "@/modules/identity/session";
 import { rpc } from "@/modules/portal/queries";
+import { CancelRequest } from "../operations/forms";
 import { CorrectionForm } from "./correction-form";
 
 type Day = {
@@ -14,8 +17,19 @@ type Day = {
   correctionStatus: string | null;
 };
 
-export default async function AttendancePage() {
-  const days = await rpc<Day[]>("my_attendance_history", { p_month: new Date().toISOString().slice(0, 7) });
+export default async function AttendancePage({ searchParams }: { searchParams: Promise<{ month?: string }> }) {
+  const identity = await requireIdentity();
+  const filters = await searchParams;
+  const month = /^\d{4}-(0[1-9]|1[0-2])$/.test(filters.month ?? "")
+    ? (filters.month ?? "")
+    : new Date().toISOString().slice(0, 7);
+  const days = await rpc<Day[]>("my_attendance_history", { p_month: month });
+  const { data: corrections } = await (await createClient())
+    .from("attendance_corrections")
+    .select("id,work_date,state,decision_reason")
+    .eq("requested_by", identity.userId)
+    .order("requested_at", { ascending: false })
+    .limit(50);
   return (
     <>
       <PageHead
@@ -26,9 +40,12 @@ export default async function AttendancePage() {
       <section className="card">
         <div className="section-title">
           <h2>This month</h2>
-          <div className="filters">
-            <input type="month" defaultValue={new Date().toISOString().slice(0, 7)} aria-label="Month" />
-          </div>
+          <form className="filters">
+            <input name="month" type="month" defaultValue={month} aria-label="Month" />
+            <button type="submit" className="button button-secondary">
+              View month
+            </button>
+          </form>
         </div>
         <div className="table-wrap">
           <table>
@@ -67,6 +84,19 @@ export default async function AttendancePage() {
       </section>
       <section className="section">
         <CorrectionForm />
+      </section>
+      <section className="section card">
+        <h2>Your correction requests</h2>
+        {(corrections ?? []).map((c) => (
+          <article key={c.id} className="section">
+            <p>
+              {c.work_date} · {c.state}
+            </p>
+            {c.decision_reason && <p>{c.decision_reason}</p>}
+            {c.state === "pending" && <CancelRequest id={c.id} kind="attendance" />}
+          </article>
+        ))}
+        {!corrections?.length && <p>No correction requests.</p>}
       </section>
     </>
   );

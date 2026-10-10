@@ -1,0 +1,25 @@
+import { readFile } from "node:fs/promises";
+import postgres from "postgres";
+
+const sql = postgres(process.env.SUPABASE_DB_URL, { max: 1, ssl: "require" });
+try {
+  for (const name of [
+    "20261010180000_crm_suite",
+    "20261010190000_workspace_operations",
+    "20261010200000_crm_integrations",
+    "20261010210000_crm_reporting",
+    "20261010220000_excused_annotations",
+  ]) {
+    const version = name.split("_")[0];
+    const source = await readFile(new URL(`../supabase/migrations/${name}.sql`, import.meta.url), "utf8");
+    await sql.begin(async (tx) => {
+      const [existing] = await tx`select version from supabase_migrations.schema_migrations where version=${version}`;
+      if (existing) return;
+      await tx.unsafe(source);
+      await tx`insert into supabase_migrations.schema_migrations(version,name,statements) values(${version},${name},${[source]})`;
+    });
+    console.log(`${name} applied.`);
+  }
+} finally {
+  await sql.end();
+}

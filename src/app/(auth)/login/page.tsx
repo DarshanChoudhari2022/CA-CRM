@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Brand } from "@/components/brand";
 import { LoginForm } from "./login-form";
 
@@ -23,6 +24,7 @@ export default function LoginPage() {
       </section>
       <section className="auth-form-wrap">
         <LoginForm />
+        <Link href="/admin/login">Administrator sign in</Link>
       </section>
     </main>
   );

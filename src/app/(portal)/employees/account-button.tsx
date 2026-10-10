@@ -29,7 +29,7 @@ export function AccountButton({ employeeId, accountLinked }: { employeeId: strin
     });
   const shareCredentials = async () => {
     if (!credentials) return;
-    const text = `PSB Workspace login\nLogin: ${window.location.origin}/login\nEmail: ${credentials.email}\nTemporary password: ${credentials.password}\nPlease change the password after your first login.`;
+    const text = `PSB Workspace login\nLogin: ${window.location.origin}/employee/login\nEmail: ${credentials.email}\nTemporary password: ${credentials.password}\nPlease change the password after your first login.`;
     try {
       if (navigator.share) {
         await navigator.share({ title: "PSB Workspace login", text });

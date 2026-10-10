@@ -102,4 +102,4 @@ Inspect remote/database state before deployment. Apply reviewed migrations to st
 
 If application release fails, roll back to the previous compatible build and use an announced manual attendance log while the issue is resolved. Re-enter those records through auditable corrections. Do not discard already committed attendance or restore an old backup over new data without a reconciled recovery plan.
 
-Business policy confirmation is needed before pilot activation, not before building this proposed design. The next implementation milestone is P0–P2; this request delivers the specification package only.
+Business policy confirmation is needed before pilot activation, not before building this proposed design. The baseline has now been implemented and the user expanded scope to the CRM suite. See [current delivery and remaining phases](crm-suite-delivery.md) for actual implementation status; the original gates above still need pilot evidence.
