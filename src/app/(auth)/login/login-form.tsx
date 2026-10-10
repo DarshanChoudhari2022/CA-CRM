@@ -1,16 +1,38 @@
 "use client";
 
-import { useActionState } from "react";
-import { login } from "./actions";
+import { useState } from "react";
 
 export function LoginForm() {
-  const [state, action, pending] = useActionState(login, {});
+  const [error, setError] = useState("");
+  const [pending, setPending] = useState(false);
   return (
-    <form action={action} className="auth-form">
+    <form
+      className="auth-form"
+      onSubmit={async (event) => {
+        event.preventDefault();
+        setError("");
+        setPending(true);
+        const form = new FormData(event.currentTarget);
+        try {
+          const response = await fetch("/api/auth/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: form.get("email"), password: form.get("password") }),
+          });
+          const body = await response.json();
+          if (!response.ok) setError(body.error ?? "We could not sign you in.");
+          else window.location.assign("/dashboard");
+        } catch {
+          setError("The sign-in service could not be reached. Try again.");
+        } finally {
+          setPending(false);
+        }
+      }}
+    >
       <h2>Sign in</h2>
-      {state.error && (
+      {error && (
         <div className="form-error" role="alert">
-          {state.error}
+          {error}
         </div>
       )}
       <div className="field">
