@@ -1,10 +1,10 @@
-# Attendance Management — Product Requirements
+# Attendance and Leave Management — Product Requirements
 
 Version 0.1 · 10 October 2026 · Draft for product review
 
 ## 1. Objective and scope decision
 
-Build the first module of the PSB Associates Firm Management Portal: dependable employee attendance with corrections, approvals and monthly reconciliation. It must work independently of future client, invoice, document, AI and n8n modules.
+Build the first module of the PSB Associates Firm Management Portal: dependable employee attendance and leave management with corrections, approvals, balances and monthly reconciliation. It must work independently of future client, invoice, document, AI and n8n modules.
 
 Confirmed: attendance first, future modular expansion, PSB header branding, Supabase and the supplied GitHub destination. Proposed decisions below make the build estimable; they are not confirmed PSB HR policy. This scope supersedes the initial README that included full leave management.
 
@@ -19,7 +19,7 @@ Sources: the user request, the existing PSB header, the supplied workflow and th
 | One daily check-in/check-out | Multiple sessions, break punches, overnight shifts, offline punches |
 | Personal history, team register and dashboard | GPS, geofencing, selfies, biometrics, device enforcement |
 | Correction request and single human approval | Multi-level approvals and disciplinary decisions |
-| Weekly schedules, branch holidays, versioned policies | Leave requests, balances, accrual, encashment, payroll |
+| Weekly schedules, branch holidays, versioned policies | Advanced accrual, carry-forward, encashment and payroll |
 | CSV reports, month close/reopen and audit | PDF/XLSX reporting, external attendance messaging |
 | In-app pending queue and decision feedback | Clients, documents, compliance, leads, invoices, AI and n8n |
 
@@ -61,6 +61,10 @@ Admin self-corrections require another admin. Plan for two approvers at setup. N
 | AT-12 | Month close/reopen | Only completed months close; pending corrections/incomplete records block closure; locked months reject edits; reopen needs reason and preserves prior snapshot |
 | AT-13 | Audit and in-app feedback | Punches, corrections, decisions, annotations, configuration, roles and closures traceable; employee sees decision state and unread indicator |
 | AT-14 | Responsive PSB portal | Header branding reused; keyboard navigation, visible focus, text status labels, accessible errors and loading/empty/offline/session-expired states |
+| AT-15 | Leave types and annual balances | Admin creates types and default allocation; each employee has a year-specific allocated/used/available balance |
+| AT-16 | Employee leave request | Full or half-day request validates working days, overlap, balance, employment and reason before becoming pending |
+| AT-17 | Leave approval | Current manager/admin can approve or reject; no self-approval; approval locks and deducts balance in one transaction |
+| AT-18 | Leave/attendance integration | Approved leave appears in dashboard/reporting and cannot be double-booked; advanced payroll treatment remains deferred |
 
 ## 5. Proposed defaults
 
@@ -122,7 +126,7 @@ Planning envelope: 200 employees, 3 branches, 25 simultaneous punches. Validate 
 
 Pilot targets: >=95% of eligible days resolved before month close; >=90% of corrections decided within two working days; monthly report preparation under ten minutes; zero unauthorized cross-team access in the test matrix. Record baseline manual effort; these are proposed targets, not measured benefits.
 
-Launch gates: AT-01–AT-14 pass; concurrent writes and access controls verified; reports reconciled; recovery email tested; backup restore rehearsed; two approvers trained; HR has reviewed policy. Proposed backup objective: daily backup, restore within one working day, subject to actual hosting capability and restore measurement. HR must set retention before real employee data is collected.
+Launch gates: AT-01–AT-18 pass; concurrent writes and access controls verified; reports reconciled; recovery email tested; backup restore rehearsed; two approvers trained; HR has reviewed policy. Proposed backup objective: daily backup, restore within one working day, subject to actual hosting capability and restore measurement. HR must set retention before real employee data is collected.
 
 ## 9. Decisions before pilot
 

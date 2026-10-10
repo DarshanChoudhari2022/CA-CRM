@@ -1,0 +1,30 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { createClient } from "@/lib/supabase/server";
+
+export type ActionState = { error?: string; success?: string };
+
+export async function punch(kind: "check_in" | "check_out", requestId: string): Promise<ActionState> {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("record_attendance_punch", { p_kind: kind, p_request_id: requestId });
+  if (error) return { error: error.message };
+  revalidatePath("/dashboard");
+  revalidatePath("/attendance");
+  return { success: kind === "check_in" ? "Check-in saved." : "Check-out saved." };
+}
+
+export async function requestCorrection(_: ActionState, formData: FormData): Promise<ActionState> {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("request_attendance_correction", {
+    p_work_date: String(formData.get("workDate")),
+    p_check_in: String(formData.get("checkIn")),
+    p_check_out: String(formData.get("checkOut")),
+    p_reason: String(formData.get("reason")),
+    p_request_id: crypto.randomUUID(),
+  });
+  if (error) return { error: error.message };
+  revalidatePath("/attendance");
+  revalidatePath("/approvals");
+  return { success: "Correction request submitted." };
+}

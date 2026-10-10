@@ -1,25 +1,49 @@
 # PSB Associates — Firm Management Portal
 
-A modular portal for P S B & Associates LLP. **Release 1 is Attendance Management only.** The wider CA automation suite will be pitched after the attendance pilot.
+A modular internal portal for P S B & Associates LLP. Release 1 implements employee attendance and leave management; future CA practice modules remain separately scoped.
 
-## Planning documents
+## Implemented
 
-| Document | Contents |
-| --- | --- |
-| [Attendance PRD](docs/attendance-prd.md) | Exact features, roles, rules, acceptance criteria and proposed defaults |
-| [Design document](docs/design.md) | Screens, PSB branding, architecture, schema and transaction contracts |
-| [Implementation plan](docs/implementation-plan.md) | Work packages, dependencies, test coverage and release gates |
-| [Future suite](docs/future-suite.md) | Reference assessment, deferred modules and follow-on pitch |
+- Next.js 16 App Router, React 19, TypeScript and Tailwind CSS 4.
+- Supabase Auth and Postgres with row-level permissions.
+- Employee, manager, administrator and partner roles.
+- Server-authoritative check-in/check-out with duplicate protection.
+- Attendance history and correction approvals.
+- Leave types, balances, date validation and approval workflow.
+- Employee directory with branch, manager and policy assignment.
+- Versioned attendance policy setup.
+- Manager approval queue.
+- Monthly summary, CSV export and month close/reopen database operations.
+- Audit records for consequential actions.
+- Responsive PSB-branded portal.
+- Four applied Supabase migrations and domain tests.
 
-Status: draft specification, 10 October 2026. This repository contains documentation and branding assets; no working application, migrations or live automation has been implemented.
+External CA automation, payroll, biometrics, GPS/geofencing and full HR records are outside this release.
 
-Release 1 includes sign-in, minimal employee setup, daily punches, history, corrections with approval, calendars, reporting and month locking. Full leave management, payroll, biometrics, geofencing and client automation are deferred. This scope supersedes the original foundation README.
+## Technology
 
-Proposed stack: React + TypeScript + Vite with Supabase Auth and Postgres. Shared identity and branding support later modules; attendance owns its rules.
+The portal is a modular monolith: Next.js supplies the web and server layer; Supabase Auth identifies users; Postgres owns business transitions and permissions. Attendance and leave each expose a small interface while their calculations, idempotency, balance updates and audits remain inside transactional database functions. Future client, document, compliance, lead, invoice and automation modules can join the same identity and organization model without writing attendance tables directly.
 
-Brand assets in public/brand/ were copied from the existing PSB website. Reproduce its CA India mark and “PSB & Associates LLP / Chartered Accountants” header treatment.
+## Run locally
 
-## Configuration
+1. Copy .env.example to .env.local and configure the browser-safe Supabase values plus the database URL.
+2. Run npm install.
+3. Run npm run dev and open http://localhost:3000.
+4. Apply migrations with npx supabase db push --db-url <connection-url>.
+5. Create the first user in Supabase Authentication, set BOOTSTRAP_ADMIN_EMAIL and BOOTSTRAP_ADMIN_NAME locally, then run npm run bootstrap:admin.
 
-.env.example documents placeholders; runnable setup instructions will follow the application scaffold. Keep database passwords, administrative keys, employee exports and .env files out of Git. The browser uses the publishable key with database permissions; administrative credentials stay server-side.
+The supplied project already has the four attendance/leave migrations applied. It currently has no Auth users, so the controlled administrator bootstrap is still required.
+
+## Quality checks
+
+Run npm run typecheck, npm run lint, npm test and npm run build. See [setup and operations](docs/setup.md) for onboarding and production requirements.
+
+## Product documents
+
+- [Attendance and leave PRD](docs/attendance-prd.md)
+- [Design document](docs/design.md)
+- [Implementation plan](docs/implementation-plan.md)
+- [Future suite and pitch](docs/future-suite.md)
+
+Brand assets under public/brand were copied from the existing PSB website. Secrets, .env files and employee exports are excluded from Git.
 

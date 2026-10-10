@@ -27,7 +27,7 @@ The workflow references Google Sheets tabs Clients, Documents_Tracker, Complianc
 | Lead pipeline | Website/email/WhatsApp lead branches and daily follow-up | Capture, deduplicate, assign, classify, track follow-up and convert | Channel permissions, qualification criteria and audit of automation decisions |
 | Invoice and collections | Invoice follow-up and payment confirmation | Invoice register, outstanding balance, reminder queue, partial/full payment reconciliation | Verified payment source, amounts/currency, refunds and duplicate event handling |
 | Tasks and reports | Visible dashboard navigation | Assignments, due dates, firm workload and module-level reporting | Product specification needed; navigation alone is not implementation evidence |
-| Leave management | Earlier user HR intent, not supplied workflow | Request/approve leave, balances, policies and holiday integration | HR policy agreed; update attendance through its interface |
+| Advanced leave/HR | Core leave requests and balances now exist in Release 1 | Accrual, carry-forward, encashment, documents and payroll integration | HR policy and payroll treatment agreed; extend through the leave interface |
 | Automation operations | Error log and Telegram nodes | Run history, delivery status, retries, failed-job queue, replay and pause controls | Tested credential handling, monitoring and operational ownership |
 
 ## 3. Workflow behavior versus production commitments

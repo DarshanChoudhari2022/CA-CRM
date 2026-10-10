@@ -1,10 +1,10 @@
 # PSB Portal — Design Document
 
-Version 0.1 · 10 October 2026 · Proposed design, not implemented
+Version 0.2 · 10 October 2026 · Implemented foundation
 
 ## 1. Design direction
 
-Use one modular application and one Supabase database initially. Shared identity, employee references, navigation and audit support attendance; each later business module owns its data and rules. Do not create microservices, a plugin marketplace or future-module tables in Release 1.
+Use one modular application and one Supabase database initially. Shared identity, employee references, navigation and audit support attendance and leave; each later business module owns its data and rules. Do not create microservices, a plugin marketplace or unrelated future-module tables in Release 1.
 
 The codebase-design approach places authorization, dates, classification, revisions and audit behavior behind the attendance module's small interface. UI callers request an action and receive an authoritative result; they do not separately update time, status and audit rows.
 
@@ -76,6 +76,9 @@ All business rows carry firm_id. Start with one PSB firm; retain the field for s
 | attendance_annotations | employee/date, excused reason, actor, active/version; conflicts with punches rejected transactionally |
 | attendance_months | firm/month, state, revision, closed/reopened actors/times; unique firm/month |
 | attendance_report_snapshots | month/version, immutable detail/summary payload, policy references, generated_by/at |
+| leave_types | firm-scoped name/code, default annual allocation and active state |
+| leave_balances | employee/type/year allocation and used quantity; approval updates under row lock |
+| leave_requests | date range, full/half-day portion, computed working days, reason, state and reviewer trail |
 | audit_events | actor, action, entity, request ID, timestamp, minimized before/after values; append-only |
 | notification_receipts | membership, correction decision, read_at; no external messaging |
 | idempotency_requests | firm, actor, operation, request key, payload hash, committed result; unique scoped key |

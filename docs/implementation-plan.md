@@ -1,10 +1,10 @@
 # Attendance — Implementation Plan
 
-Version 0.1 · 10 October 2026 · Planning only
+Version 0.2 · 10 October 2026 · Implementation baseline
 
 ## 1. Delivery contract
 
-Implement [PRD](attendance-prd.md) AT-01–AT-14 using [design.md](design.md). No future automation, full leave engine, payroll, GPS or biometric integration is included. Current repository is documentation and assets only. No completed implementation is implied by this plan.
+Implement [PRD](attendance-prd.md) AT-01–AT-18 using [design.md](design.md). Attendance and core leave requests/balances are included. Future automation, advanced accrual/carry-forward, payroll, GPS and biometric integration are excluded. The application, database migrations and core workflows now form the implementation baseline.
 
 Use vertical slices: schema and permissions, then a working user journey with relevant tests. Keep attendance calculations in one authoritative implementation. Publish working code to the supplied repository under the user's existing instruction; keep credentials and employee data excluded.
 
@@ -83,7 +83,7 @@ P1 styling and P0 policy collection can overlap. Critical dependency chain: iden
 
 Use database-backed integration tests for RLS, constraints, transaction rollback and concurrency. Test classification through the authoritative interface with fixed server-clock fixtures. Use a small browser suite for the complete employee/manager/admin journeys. Avoid mock-only tests that cannot exercise database permissions.
 
-A documentation-only draft needs link/consistency review, not app test execution. At implementation time, tests must verify behavior, not merely mirror table or UI definitions.
+The implemented baseline requires type checking, linting, domain tests, production build, migration validation and authenticated staging journeys. Tests verify behavior through module and database interfaces rather than mirroring the UI.
 
 ## 5. Release gates and pilot
 
