@@ -10,6 +10,8 @@ try {
     "20261010210000_crm_reporting",
     "20261010220000_excused_annotations",
     "20261012120000_workspace_performance",
+    "20261012150000_daily_reports_and_photos",
+    "20261012151000_photo_discard_intent",
   ]) {
     const version = name.split("_")[0];
     const source = await readFile(new URL(`../supabase/migrations/${name}.sql`, import.meta.url), "utf8");

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { formatWorkedMinutes } from "@/modules/attendance/duration";
 import { requireIdentity } from "@/modules/identity/session";
 
 export type ActionState = { error?: string; success?: string };
@@ -9,11 +10,19 @@ export type ActionState = { error?: string; success?: string };
 export async function punch(kind: "check_in" | "check_out", requestId: string): Promise<ActionState> {
   await requireIdentity();
   const supabase = await createClient();
-  const { error } = await supabase.rpc("record_attendance_punch", { p_kind: kind, p_request_id: requestId });
+  const { data, error } = await supabase.rpc("record_attendance_punch", { p_kind: kind, p_request_id: requestId });
   if (error) return { error: error.message };
   revalidatePath("/dashboard");
   revalidatePath("/attendance");
-  return { success: kind === "check_in" ? "Check-in saved." : "Check-out saved." };
+  const saved = data as { duration_minutes?: number | null } | null;
+  return {
+    success:
+      kind === "check_in"
+        ? "Check-in saved."
+        : typeof saved?.duration_minutes === "number"
+          ? `Check-out saved. Time worked today: ${formatWorkedMinutes(saved.duration_minutes)}.`
+          : "Check-out saved.",
+  };
 }
 
 export async function requestCorrection(_: ActionState, formData: FormData): Promise<ActionState> {

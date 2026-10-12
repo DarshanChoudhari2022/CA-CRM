@@ -1,11 +1,17 @@
 import { CalendarCheck2, ClipboardCheck, Clock3, UsersRound } from "lucide-react";
 import { PageHead } from "@/components/page-head";
 import { StatusPill } from "@/components/status-pill";
+import type { DailyReportData } from "@/modules/attendance/daily-report";
 import { type DashboardSnapshot, rpc } from "@/modules/portal/queries";
 import { PunchButton } from "../attendance/punch-button";
+import { ShiftDuration } from "../attendance/shift-duration";
+import { DailyReportCard } from "./daily-report-card";
 
 export default async function DashboardPage() {
-  const snapshot = await rpc<DashboardSnapshot>("dashboard_snapshot");
+  const [snapshot, report] = await Promise.all([
+    rpc<DashboardSnapshot>("dashboard_snapshot_v2"),
+    rpc<DailyReportData>("my_daily_report").catch(() => null),
+  ]);
   const cards = [
     ["Present today", snapshot.stats.present, `${snapshot.stats.expected} expected`, UsersRound],
     ["On leave", snapshot.stats.onLeave, "Approved for today", CalendarCheck2],
@@ -50,11 +56,29 @@ export default async function DashboardPage() {
               ? `Checked out at ${new Date(snapshot.today.checkOut).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kolkata" })}`
               : "Your saved attendance appears here."}
           </div>
+          <ShiftDuration
+            checkIn={snapshot.today.checkIn}
+            checkOut={snapshot.today.checkOut}
+            serverNow={snapshot.today.serverNow}
+            durationMinutes={snapshot.today.durationMinutes}
+          />
         </div>
         <div className="today-action">
           <PunchButton canCheckIn={snapshot.today.canCheckIn} canCheckOut={snapshot.today.canCheckOut} />
         </div>
       </section>
+      {report ? (
+        <DailyReportCard report={report} />
+      ) : (
+        <section className="card section">
+          <h2>
+            Tasks performed today <span className="optional-badge">Optional</span>
+          </h2>
+          <p className="stat-note">
+            Work updates are temporarily unavailable. You can still check in or check out above.
+          </p>
+        </section>
+      )}
       <section className="section grid grid-2">
         <div className="card">
           <div className="section-title">

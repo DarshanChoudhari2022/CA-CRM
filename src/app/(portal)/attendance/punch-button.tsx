@@ -1,17 +1,18 @@
 "use client";
 
 import { LogIn, LogOut } from "lucide-react";
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { punch } from "./actions";
 
 export function PunchButton({ canCheckIn, canCheckOut }: { canCheckIn: boolean; canCheckOut: boolean }) {
   const [message, setMessage] = useState("");
   const [pending, start] = useTransition();
+  const request = useRef<{ kind: string; id: string } | null>(null);
   const kind = canCheckIn ? "check_in" : canCheckOut ? "check_out" : null;
   if (!kind)
     return (
       <div style={{ textAlign: "center" }}>
-        <StatusText>Attendance complete for today.</StatusText>
+        <StatusText>{message || "Attendance complete for today."}</StatusText>
       </div>
     );
   const Icon = kind === "check_in" ? LogIn : LogOut;
@@ -23,8 +24,14 @@ export function PunchButton({ canCheckIn, canCheckOut }: { canCheckIn: boolean; 
         disabled={pending}
         onClick={() =>
           start(async () => {
-            const result = await punch(kind, crypto.randomUUID());
-            setMessage(result.error ?? result.success ?? "");
+            if (request.current?.kind !== kind) request.current = { kind, id: crypto.randomUUID() };
+            try {
+              const result = await punch(kind, request.current.id);
+              setMessage(result.error ?? result.success ?? "");
+              if (result.success) request.current = null;
+            } catch {
+              setMessage("Could not confirm attendance. Refresh to check your saved status before retrying.");
+            }
           })
         }
       >
