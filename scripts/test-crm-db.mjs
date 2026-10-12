@@ -92,6 +92,22 @@ try {
     );
     const ownTask = await save("tasks", { title: "Assigned task", status: "todo", owner_id: m.id });
     await save("tasks", { title: "Admin task", status: "todo", owner_id: a.id });
+    await tx.unsafe("reset role");
+    const [unrelated] =
+      await tx`insert into public.employees(organization_id,employee_code,full_name,work_email,branch_id,policy_id,joined_on) values(${org.id},'C','Unrelated',${`${randomUUID()}@example.invalid`},${branch.id},${policy.id},current_date) returning id`;
+    await tx.unsafe("set local role authenticated");
+    await save("tasks", { title: "Unrelated task", status: "todo", owner_id: unrelated.id });
+    await tx.unsafe("reset role");
+    await tx`update public.profiles set role='manager' where user_id=${admin}`;
+    await tx.unsafe("set local role authenticated");
+    assert.equal(
+      (await tx`select id from public.crm_tasks`).length,
+      2,
+      "manager sees own and direct-report tasks, not unrelated employees",
+    );
+    await tx.unsafe("reset role");
+    await tx`update public.profiles set role='admin' where user_id=${admin}`;
+    await tx.unsafe("set local role authenticated");
     const ticket = await save("support", { title: "Query", status: "open", owner_id: m.id });
     const request = randomUUID();
     await tx`select public.crm_reserve_send(${request},${ticket},'gmail','test@example.invalid','Test','Reviewed body')`;
@@ -118,6 +134,14 @@ try {
     await tx`update public.profiles set active=false where user_id=${member}`;
     await tx.unsafe("set local role authenticated");
     assert.equal((await tx`select id from public.crm_tasks`).length, 0, "inactive member cannot read tasks");
+    await tx.unsafe("reset role");
+    await tx`update public.profiles set active=true,password_change_required=true where user_id=${member}`;
+    await tx.unsafe("set local role authenticated");
+    assert.equal((await tx`select id from public.crm_tasks`).length, 0, "onboarding cannot bypass role-scoped access");
+    await rejected(
+      (sp) => sp`insert into public.crm_tasks(organization_id,title) values(${org.id},'Direct write')`,
+      "direct table writes denied",
+    );
     console.log(
       "Passed CRM database checks: organization isolation, assignment RLS, lead conversion idempotency, invoice immutability, duplicate/overpayment rejection, duplicate-send protection, employee restrictions, inactive access.",
     );

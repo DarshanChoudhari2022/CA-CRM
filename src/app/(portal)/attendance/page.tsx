@@ -23,13 +23,18 @@ export default async function AttendancePage({ searchParams }: { searchParams: P
   const month = /^\d{4}-(0[1-9]|1[0-2])$/.test(filters.month ?? "")
     ? (filters.month ?? "")
     : new Date().toISOString().slice(0, 7);
-  const days = await rpc<Day[]>("my_attendance_history", { p_month: month });
-  const { data: corrections } = await (await createClient())
-    .from("attendance_corrections")
-    .select("id,work_date,state,decision_reason")
-    .eq("requested_by", identity.userId)
-    .order("requested_at", { ascending: false })
-    .limit(50);
+  const client = await createClient();
+  const [days, correctionResult] = await Promise.all([
+    rpc<Day[]>("my_attendance_history", { p_month: month }),
+    client
+      .from("attendance_corrections")
+      .select("id,work_date,state,decision_reason")
+      .eq("requested_by", identity.userId)
+      .order("requested_at", { ascending: false })
+      .limit(50),
+  ]);
+  if (correctionResult.error) throw new Error("Correction requests unavailable.");
+  const corrections = correctionResult.data;
   return (
     <>
       <PageHead

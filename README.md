@@ -48,6 +48,7 @@ Run `node --env-file=.env.local scripts/test-crm-db.mjs` and `node --env-file=.e
 - [Implementation plan](docs/implementation-plan.md)
 - [Future suite and pitch](docs/future-suite.md)
 - [CRM implementation, integration variables and remaining phases](docs/crm-suite-delivery.md)
+- [Attendance/CRM separation, mobile styling and measured performance](docs/workspace-performance.md)
 
 Brand assets under public/brand were copied from the existing PSB website. Secrets, .env files and employee exports are excluded from Git.
 

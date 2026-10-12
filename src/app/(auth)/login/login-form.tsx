@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import { useState } from "react";
 
-export function LoginForm({ audience = "employee" }: { audience?: "admin" | "employee" }) {
+export function LoginForm({ audience = "employee" }: { audience?: "admin" | "employee" | "crm" }) {
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
   return (
@@ -37,7 +37,9 @@ export function LoginForm({ audience = "employee" }: { audience?: "admin" | "emp
       <h2>
         Welcome back<span>.</span>
       </h2>
-      <p className="auth-form-intro">{audience === "admin" ? "Administrator access" : "Employee access"}</p>
+      <p className="auth-form-intro">
+        {audience === "crm" ? "CA CRM" : audience === "admin" ? "Attendance · administrator" : "Attendance · employee"}
+      </p>
       {error && (
         <div className="form-error" role="alert">
           {error}

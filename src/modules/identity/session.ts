@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 
 export type PortalIdentity = {
@@ -9,20 +10,25 @@ export type PortalIdentity = {
   organizationId: string;
 };
 
-export async function requireIdentity(): Promise<PortalIdentity> {
+// React cache is scoped to this server render, never shared between users/requests.
+export const requireIdentity = cache(async (): Promise<PortalIdentity> => {
   const supabase = await createClient();
   const { data: claims } = await supabase.auth.getClaims();
   if (!claims?.claims?.sub) redirect("/login");
 
-  const { data, error } = await supabase.rpc("current_portal_identity").single();
-  if (error || !data) redirect("/login?error=inactive");
-  const { data: profile } = await supabase
+  const { data: profile, error } = await supabase
     .from("profiles")
-    .select("password_change_required")
+    .select("user_id,full_name,role,employee_id,organization_id,password_change_required")
     .eq("user_id", claims.claims.sub)
+    .eq("active", true)
     .single();
-  if (!profile) redirect("/login?error=inactive");
+  if (error || !profile) redirect("/login?error=inactive");
   if (profile.password_change_required) redirect("/change-password");
-  const row = data as unknown as PortalIdentity;
-  return row;
-}
+  return {
+    userId: profile.user_id,
+    fullName: profile.full_name,
+    role: profile.role,
+    employeeId: profile.employee_id,
+    organizationId: profile.organization_id,
+  };
+});

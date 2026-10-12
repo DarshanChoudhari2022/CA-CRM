@@ -9,6 +9,7 @@ try {
     "20261010200000_crm_integrations",
     "20261010210000_crm_reporting",
     "20261010220000_excused_annotations",
+    "20261012120000_workspace_performance",
   ]) {
     const version = name.split("_")[0];
     const source = await readFile(new URL(`../supabase/migrations/${name}.sql`, import.meta.url), "utf8");

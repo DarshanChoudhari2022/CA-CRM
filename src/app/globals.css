@@ -1,14 +1,17 @@
 @import "tailwindcss";
 
 :root {
-  --ink: #10273b;
-  --ink-2: #1d3a50;
-  --muted: #637482;
-  --line: #dce5ea;
-  --canvas: #f3f6f8;
+  --font-ui: "Segoe UI Variable", "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+  --font-brand-serif: var(--font-ui);
+  --font-brand-sans: var(--font-ui);
+  --ink: #182536;
+  --ink-2: #25364b;
+  --muted: #596579;
+  --line: #e1e6ee;
+  --canvas: #f5f7fb;
   --surface: #ffffff;
-  --accent: #c69b54;
-  --blue: #2563eb;
+  --accent: #0f6cbd;
+  --blue: #0f6cbd;
   --green: #19734b;
   --amber: #9a6515;
   --red: #b42318;
@@ -24,7 +27,10 @@ body {
   margin: 0;
   color: var(--ink);
   background: var(--canvas);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
 }
 button,
 input,
@@ -119,10 +125,10 @@ a {
 .brand strong {
   display: block;
   font-family: var(--font-brand-serif), Georgia, serif;
-  font-weight: 400;
+  font-weight: 650;
   font-size: 22px;
   line-height: 1.35;
-  letter-spacing: -0.035em;
+  letter-spacing: -0.015em;
 }
 .brand small {
   display: block;
@@ -228,7 +234,7 @@ a {
 .portal {
   min-height: 100vh;
   display: grid;
-  grid-template-columns: 250px minmax(0, 1fr);
+  grid-template-columns: 236px minmax(0, 1fr);
 }
 .sidebar {
   position: sticky;
@@ -319,9 +325,8 @@ a {
 }
 .page-head h1 {
   margin: 6px 0 8px;
-  font:
-    400 36px Georgia,
-    serif;
+  font: 650 28px / 1.25 var(--font-ui);
+  letter-spacing: -0.025em;
 }
 .page-head p {
   color: var(--muted);
@@ -356,9 +361,8 @@ a {
 }
 .stat-value {
   display: block;
-  font:
-    400 34px Georgia,
-    serif;
+  font: 650 30px / 1.25 var(--font-ui);
+  font-variant-numeric: tabular-nums;
   margin: 18px 0 4px;
 }
 .stat-note {
@@ -376,9 +380,7 @@ a {
 }
 .section-title h2 {
   margin: 0;
-  font:
-    400 23px Georgia,
-    serif;
+  font: 600 18px / 1.4 var(--font-ui);
 }
 .today-card {
   background: var(--ink);
@@ -390,9 +392,7 @@ a {
   gap: 22px;
 }
 .clock {
-  font:
-    400 46px Georgia,
-    serif;
+  font: 650 40px / 1.25 var(--font-ui);
   margin: 10px 0 4px;
   font-variant-numeric: tabular-nums;
 }
@@ -495,9 +495,7 @@ tbody tr:last-child td {
   justify-content: space-between;
 }
 .balance strong {
-  font:
-    400 30px Georgia,
-    serif;
+  font: 650 28px / 1.25 var(--font-ui);
 }
 .progress {
   height: 6px;

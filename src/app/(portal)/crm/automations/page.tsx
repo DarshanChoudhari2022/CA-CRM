@@ -7,20 +7,23 @@ import { acknowledge } from "./actions";
 export default async function AutomationsPage() {
   const identity = await requireIdentity();
   const client = await createClient();
-  const { data: events, error } = await client
-    .from("crm_automation_events")
-    .select("*")
-    .order("created_at", { ascending: false })
-    .limit(100);
-  if (error) throw new Error("Automation events unavailable.");
   const admin = ["admin", "partner"].includes(identity.role);
-  const outbox = admin
-    ? await client
-        .from("crm_outbox")
-        .select("id,channel,recipient,status,created_at")
-        .order("created_at", { ascending: false })
-        .limit(100)
-    : null;
+  const [eventResult, outbox] = await Promise.all([
+    client
+      .from("crm_automation_events")
+      .select("id,title,status,source_module,notes,created_at")
+      .order("created_at", { ascending: false })
+      .limit(100),
+    admin
+      ? client
+          .from("crm_outbox")
+          .select("id,channel,recipient,status,created_at")
+          .order("created_at", { ascending: false })
+          .limit(100)
+      : null,
+  ]);
+  if (eventResult.error || outbox?.error) throw new Error("Automation events unavailable.");
+  const events = eventResult.data;
   return (
     <>
       <PageHead
