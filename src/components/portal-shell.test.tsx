@@ -3,7 +3,8 @@ import { act, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const state = vi.hoisted(() => ({ path: "/attendance" }));
+const state = vi.hoisted(() => ({ path: "/attendance", count: 0 }));
+vi.mock("@/modules/portal/approval-count", () => ({ getPendingApprovalCount: async () => state.count }));
 vi.mock("next/navigation", () => ({ usePathname: () => state.path }));
 vi.mock("@/app/(portal)/actions", () => ({ signOut: vi.fn() }));
 vi.mock("next/image", () => ({
@@ -40,6 +41,7 @@ import { PortalShell } from "./portal-shell";
 let container: HTMLDivElement, root: Root;
 beforeEach(() => {
   state.path = "/attendance";
+  state.count = 0;
   container = document.createElement("div");
   document.body.append(container);
   root = createRoot(container);
@@ -66,6 +68,31 @@ async function render() {
   );
 }
 describe("workspace shell mobile interactions", () => {
+  it("shows the pending count in desktop and mobile navigation and clears it after a decision", async () => {
+    state.count = 3;
+    await render();
+    expect(container.querySelector('.sidebar a[href="/approvals"] .approval-badge')?.textContent).toBe("3");
+    expect(container.querySelector('#mobile-workspace-menu a[href="/approvals"] .approval-badge')?.textContent).toBe(
+      "3",
+    );
+    expect(container.querySelector('.sidebar a[href="/approvals"]')?.getAttribute("aria-label")).toBe(
+      "Approvals: 3 pending requests",
+    );
+    state.count = 0;
+    await act(async () => window.dispatchEvent(new Event("approvals-changed")));
+    expect(container.querySelector(".approval-badge")).toBeNull();
+  });
+  it("caps the circle at 99+ but keeps the exact accessible count", async () => {
+    state.count = 120;
+    await render();
+    expect(container.querySelector(".approval-badge")?.textContent).toBe("99+");
+    expect(container.querySelector('.sidebar a[href="/approvals"]')?.getAttribute("title")).toBe(
+      "Approvals: 120 pending requests",
+    );
+    state.path = "/crm/tasks";
+    await render();
+    expect(container.querySelector(".approval-badge")).toBeNull();
+  });
   it("starts with mobile navigation hidden, opens and closes from its accessible menu button", async () => {
     await render();
     const menu = container.querySelector<HTMLElement>("#mobile-workspace-menu");

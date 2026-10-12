@@ -7,11 +7,11 @@ export function DecisionButtons({ kind, id }: { kind: "leave" | "attendance"; id
   const [pending, start] = useTransition();
   const [message, setMessage] = useState("");
   const run = (decision: "approved" | "rejected") =>
-    start(async () =>
-      setMessage(
-        (await decide(kind, id, decision, decision === "rejected" ? "Rejected by reviewer" : "")).error ?? "Saved",
-      ),
-    );
+    start(async () => {
+      const result = await decide(kind, id, decision, decision === "rejected" ? "Rejected by reviewer" : "");
+      setMessage(result.error ?? "Saved");
+      if (!result.error) window.dispatchEvent(new Event("approvals-changed"));
+    });
   return (
     <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
       <button type="button" className="button button-primary" disabled={pending} onClick={() => run("approved")}>

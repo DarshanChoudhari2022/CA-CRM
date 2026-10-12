@@ -2,9 +2,10 @@
 import { ArrowLeftRight, LogOut, Menu, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { signOut } from "@/app/(portal)/actions";
 import type { PortalIdentity } from "@/modules/identity/session";
+import { getPendingApprovalCount } from "@/modules/portal/approval-count";
 import { workspaceForPath, workspaceNavigation } from "@/modules/portal/navigation";
 import { Brand } from "./brand";
 import { navIcons } from "./icons";
@@ -14,21 +15,58 @@ export function PortalShell({ children, identity }: { children: React.ReactNode;
   const workspace = workspaceForPath(path);
   const links = workspaceNavigation(workspace, identity.role);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [approvalCount, setApprovalCount] = useState(0);
+  useEffect(() => {
+    if (workspace !== "attendance" || identity.role === "employee") return;
+    let cancelled = false;
+    let inFlight = false;
+    const refresh = async () => {
+      if (document.visibilityState === "hidden" || inFlight) return;
+      inFlight = true;
+      try {
+        const count = await getPendingApprovalCount();
+        if (!cancelled && count !== null) setApprovalCount(count);
+      } catch {
+        // Leave the last successful count visible during connection failures.
+      } finally {
+        inFlight = false;
+      }
+    };
+    void refresh();
+    const timer = window.setInterval(refresh, 60_000);
+    window.addEventListener("focus", refresh);
+    window.addEventListener("approvals-changed", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+      window.removeEventListener("focus", refresh);
+      window.removeEventListener("approvals-changed", refresh);
+      document.removeEventListener("visibilitychange", refresh);
+    };
+  }, [workspace, identity.role]);
   const name = workspace === "crm" ? "CA CRM" : workspace === "attendance" ? "Attendance" : "Workspaces";
   const navigation = links.map(({ href, label, icon }) => {
     const Icon = navIcons[icon];
+    const count = href === "/approvals" ? approvalCount : 0;
+    const accessibleLabel = count > 0 ? `${label}: ${count} pending requests` : label;
     return (
       <Link
         href={href}
         key={href}
-        title={label}
-        aria-label={label}
+        title={accessibleLabel}
+        aria-label={accessibleLabel}
         aria-current={path === href ? "page" : undefined}
         className={path === href ? "active" : undefined}
         onNavigate={() => setMenuOpen(false)}
       >
         <Icon size={18} />
         <span>{label}</span>
+        {count > 0 && (
+          <span className="approval-badge" aria-hidden="true">
+            {count > 99 ? "99+" : count}
+          </span>
+        )}
       </Link>
     );
   });

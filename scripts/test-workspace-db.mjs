@@ -20,10 +20,23 @@ try {
       await tx`insert into public.employees(organization_id,profile_user_id,employee_code,full_name,work_email,branch_id,policy_id,joined_on) values(${org.id},${userB},'B','B',${`${userB}@example.invalid`},${branch.id},${policy.id},current_date) returning id`;
     await tx`update public.profiles set employee_id=${employeeA.id} where user_id=${userA}`;
     await tx`update public.profiles set employee_id=${employeeB.id} where user_id=${userB}`;
+    const [leaveType] =
+      await tx`insert into public.leave_types(organization_id,name,code) values(${org.id},'Test leave','TEST') returning id`;
+    for (const [user, employee] of [
+      [userA, employeeA],
+      [userB, employeeB],
+    ]) {
+      await tx`insert into public.leave_requests(organization_id,employee_id,leave_type_id,start_date,end_date,requested_days,reason,requested_by,request_id)
+        values(${org.id},${employee.id},${leaveType.id},current_date,current_date,1,'Test fixture leave',${user},${randomUUID()})`;
+    }
+    await tx`insert into public.attendance_corrections(organization_id,employee_id,work_date,base_revision,proposed_check_in,proposed_check_out,reason,requested_by,request_id)
+      values(${org.id},${employeeB.id},current_date,0,now()-interval '8 hours',now(),'Test fixture correction',${userB},${randomUUID()})`;
     const [other] =
       await tx`insert into public.daily_work_items(organization_id,employee_id,work_date,title) values(${org.id},${employeeB.id},current_date,'Private work') returning id`;
     await tx`select set_config('request.jwt.claim.sub',${userA},true)`;
     await tx.unsafe("set local role authenticated");
+    const [employeeCount] = await tx`select public.pending_approval_count() as count`;
+    assert.equal(Number(employeeCount.count), 0, "employees cannot see reviewer counts");
     const [created] = await tx`select public.save_daily_work(null,'Prepare audit','Started','planned') as id`;
     const rows = await tx`select id from public.daily_work_items`;
     assert.equal(rows.length, 1, "employee reads only own work");
@@ -38,6 +51,30 @@ try {
     }
     assert.ok(rejected, "employee cannot change colleague work");
     await tx.unsafe("reset role");
+    await tx`update public.profiles set role='admin' where user_id=${userA}`;
+    await tx.unsafe("set local role authenticated");
+    const [adminCount] =
+      await tx`select public.pending_approval_count() as count, jsonb_array_length(public.pending_approvals()) as list_count`;
+    assert.equal(Number(adminCount.count), 2, "count includes colleague leave and correction but not own leave");
+    assert.equal(Number(adminCount.count), adminCount.list_count, "count matches actionable requests");
+    await tx.unsafe("reset role");
+    await tx`update public.profiles set role='manager' where user_id=${userA}`;
+    await tx.unsafe("set local role authenticated");
+    const [unassignedCount] = await tx`select public.pending_approval_count() as count`;
+    assert.equal(Number(unassignedCount.count), 0, "manager cannot count employees outside their team");
+    await tx.unsafe("reset role");
+    await tx`update public.employees set manager_id=${employeeA.id} where id=${employeeB.id}`;
+    await tx.unsafe("set local role authenticated");
+    const [managerCount] = await tx`select public.pending_approval_count() as count`;
+    assert.equal(Number(managerCount.count), 2, "manager counts own team's pending requests");
+    await tx.unsafe("reset role");
+    await tx`update public.leave_requests set state='cancelled' where employee_id=${employeeB.id}`;
+    await tx`update public.attendance_corrections set state='rejected' where employee_id=${employeeB.id}`;
+    await tx.unsafe("set local role authenticated");
+    const [clearedCount] = await tx`select public.pending_approval_count() as count`;
+    assert.equal(Number(clearedCount.count), 0, "resolved and cancelled requests leave the count");
+    await tx.unsafe("reset role");
+    await tx`update public.profiles set role='employee' where user_id=${userA}`;
     await tx`update public.daily_work_items set work_date=current_date-2 where id=${created.id}`;
     await tx.unsafe("set local role authenticated");
     rejected = false;
@@ -58,7 +95,7 @@ try {
     const [changed] = await tx`select password_change_required from public.profiles where user_id=${userA}`;
     assert.equal(changed.password_change_required, false, "password hash update clears onboarding");
     console.log(
-      "Passed: own-work visibility, colleague edit denied, historical edit denied, password-change enforcement.",
+      "Passed: reviewer-scoped approval counts, own-work visibility, colleague edit denied, historical edit denied, password-change enforcement (fixtures rolled back).",
     );
     throw rollback;
   });
