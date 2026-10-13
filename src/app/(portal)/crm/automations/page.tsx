@@ -42,8 +42,11 @@ export default async function AutomationsPage() {
             </p>
           ))}
           <p className="stat-note">
-            AI drafts and outbound sends are manual. Delivery webhooks and inbound sync are not enabled.
+            Configure inbound enquiries, recipient permissions and durable reminder dispatch in the control centre.
           </p>
+          <Link className="button button-secondary" href="/crm/automation-center">
+            Open automation control centre
+          </Link>
         </section>
       )}
       <section className="card section">

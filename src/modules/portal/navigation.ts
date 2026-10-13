@@ -23,7 +23,10 @@ export function workspaceNavigation(workspace: Workspace, role: PortalIdentity["
       { href: "/crm/ai-team", label: "CA AI team", icon: "approvals" },
       { href: "/crm/reports", label: "Reports", icon: "reports" },
       ...(["admin", "partner"].includes(role)
-        ? [{ href: "/crm/automations", label: "Automations", icon: "settings" as const }]
+        ? [
+            { href: "/crm/automation-center", label: "Automation centre", icon: "settings" as const },
+            { href: "/crm/automations", label: "Reminder history", icon: "reports" as const },
+          ]
         : []),
     ];
   const links: NavItem[] = [{ href: "/dashboard", label: "Overview", icon: "overview" }];

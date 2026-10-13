@@ -1,6 +1,6 @@
 // A real private Storage upload/download using only a generated test image and isolated fixtures.
 import assert from "node:assert/strict";
-import { randomBytes, randomUUID } from "node:crypto";
+import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import postgres from "postgres";
 
@@ -238,6 +238,44 @@ try {
         "monthly report defaults to current month and exposes employee totals",
       );
       console.log("Passed authenticated document-version and team attendance interfaces and register export.");
+      if (process.env.PHOTO_VERIFY_AUTOMATION === "1") {
+        const center = await fetch(`${base}/crm/automation-center`, { headers: { Cookie: cookie } });
+        assert.equal(center.status, 200);
+        assert.ok(
+          (await center.text()).includes("Automation control centre"),
+          "Authenticated automation dashboard renders",
+        );
+        const [doc] =
+          await sql`insert into public.crm_documents(organization_id,title) values(${orgId},'Generated client upload fixture') returning id`;
+        const token = randomBytes(32).toString("hex");
+        await sql`insert into public.crm_collection_links(token_hash,organization_id,document_id,expires_at) values(${createHash("sha256").update(token).digest("hex")},${orgId},${doc.id},now()+interval '1 hour')`;
+        const collect = await fetch(`${base}/collect/${token}`);
+        assert.equal(collect.status, 200);
+        assert.ok((await collect.text()).includes("Generated client upload fixture"));
+        const form = new FormData();
+        form.set("file", new Blob([image], { type: "image/png" }), "fixture.png");
+        const saved = await fetch(`${base}/api/collect/${token}`, { method: "POST", body: form });
+        const [version] = await sql`select storage_path from public.crm_document_versions where document_id=${doc.id}`;
+        if (version) documentPaths.push(version.storage_path);
+        assert.equal(saved.status, 200);
+        assert.ok(
+          (await saved.text()).includes("Document received."),
+          "Private client upload finalizes real Storage file",
+        );
+        const repeated = new FormData();
+        repeated.set("file", new Blob([image], { type: "image/png" }), "fixture.png");
+        await fetch(`${base}/api/collect/${token}`, { method: "POST", body: repeated });
+        const [versions] =
+          await sql`select count(*)::int n from public.crm_document_versions where document_id=${doc.id}`;
+        assert.equal(versions.n, 1, "One-use public token prevents a second upload");
+        for (const path of ["/api/cron/crm", "/api/integrations/whatsapp?hub.mode=subscribe&hub.verify_token=wrong"]) {
+          const rejected = await fetch(`${base}${path}`);
+          assert.ok([401, 403].includes(rejected.status), "Unauthenticated worker/webhook access denied");
+        }
+        console.log(
+          "Passed automation dashboard, real private client upload, one-use link and unauthenticated endpoint checks. No provider send.",
+        );
+      }
     }
   }
   console.log(
@@ -263,6 +301,8 @@ try {
       await tx`delete from public.audit_logs where organization_id=${orgId}`;
       await tx`delete from public.ca_agent_jobs where organization_id=${orgId}`;
       await tx`delete from public.ca_knowledge where organization_id=${orgId}`;
+      if (process.env.PHOTO_VERIFY_AUTOMATION === "1")
+        await tx`delete from public.crm_collection_links where organization_id=${orgId}`;
       await tx`delete from public.crm_document_versions where organization_id=${orgId}`;
       await tx`delete from public.crm_documents where organization_id=${orgId}`;
       await tx`delete from public.daily_report_photos where organization_id=${orgId}`;

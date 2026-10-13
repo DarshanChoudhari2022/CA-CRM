@@ -1,5 +1,7 @@
 # PSB Workspace — CRM implementation and activation
 
+Update, 14 October 2026: the inbound/outbound automation phase below is superseded by [Automation implementation and activation](automation-activation.md). The native durable inbox, dispatch worker, signed webhooks, client collection links and automation control centre are implemented. Live provider activation remains separate.
+
 10 October 2026. This supersedes the attendance-only scope in the original planning package following the user's explicit request to include the future suite. It is a working CRM foundation, not certification of every advanced automation in the supplied n8n template.
 
 ## Implemented workflows
