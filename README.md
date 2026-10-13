@@ -22,7 +22,7 @@ A modular internal portal for P S B & Associates LLP. Attendance and leave opera
 - CA AI workpapers for tax, compliance, legal paperwork, documentation and finance, with saved evidence and administrator review.
 - Retained private document versions, interrupted-upload recovery, filtered team attendance and dated in-app reminders.
 
-The CRM suite now includes clients, leads, documents, compliance tasks, invoices/manual payments, tasks, support, reports and automation operations. Optional Groq/Gmail/WhatsApp integrations require configuration. Inbound sync, delivery receipts, bank reconciliation, payroll, biometrics and GPS/geofencing remain outside the implemented baseline. See [current scope and activation](docs/crm-suite-delivery.md).
+The CRM suite now includes clients, leads, documents, compliance tasks, invoices/manual payments, tasks, support, reports and automation operations. Optional Groq/Gmail/WhatsApp integrations require configuration. Labelled Gmail intake, signed WhatsApp intake and delivery receipts are implemented; live provider delivery still requires configuration and testing. Bank reconciliation, payroll, biometrics and GPS/geofencing remain outside the implemented baseline. See [current scope and activation](docs/crm-suite-delivery.md) and [step-by-step demo configuration](docs/configuration-baby-steps.md).
 
 ## Technology
 
