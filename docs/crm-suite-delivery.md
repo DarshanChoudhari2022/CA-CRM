@@ -52,7 +52,7 @@ Set `NEXT_PUBLIC_APP_URL` to the origin only, e.g. `https://ca-crm-theta.vercel.
 
 ## Verification and remaining implementation phases
 
-Automated checks: TypeScript, Biome, 13 Vitest domain/provider tests (providers mocked), production Next build, database integration tests using transaction-rolled-back fixtures. CRM database tests cover organization isolation, assignment access, inactive users, employee restrictions, conversion idempotency, issued-invoice protection, duplicate/overpayments, duplicate outbound reservations, exact financial aggregates, manager-cycle/self-removal guards, future holiday validation, and excused-annotation persistence through reconciliation. No genuine client/employee fixture data is retained and no real account password is reset.
+Automated checks: TypeScript, Biome, 85 Vitest tests across 13 files (providers mocked), production Next build, rollback database tests, actual concurrent transaction checks and generated-account HTTP/Storage acceptance. CRM database tests cover organization isolation, assignment access, inactive users, employee restrictions, conversion idempotency, issued-invoice protection, duplicate/overpayments, duplicate outbound reservations, exact financial aggregates, manager-cycle/self-removal guards, future holiday validation, and excused-annotation persistence through reconciliation. See [quality upgrade](quality-upgrade.md) for document/version/register/reminder acceptance. No genuine client/employee fixture data is retained and no real account password is reset.
 
 The full template's following capabilities remain pending rather than represented as working:
 

@@ -146,6 +146,11 @@ try {
     await tx`update public.profiles set role='admin' where user_id=${admin}`;
     const [task] =
       await tx`insert into public.crm_tasks(organization_id,title,owner_id,due_date) values(${org.id},'Due fixture',${employees[1].id},current_date) returning id`;
+    assert.equal(
+      (await tx`select id from public.crm_automation_events where source_id=${task.id} and status='queued'`).length,
+      1,
+      "task creation immediately queues its reminder",
+    );
     await tx`select public.crm_queue_reminders()`;
     await tx`select public.crm_queue_reminders()`;
     const [occurrences] =
@@ -159,18 +164,16 @@ try {
     const [ack] = await tx`select status from public.crm_automation_events where id=${event.id}`;
     assert.equal(ack.status, "acknowledged", "repeat scheduler preserves acknowledgement");
     await tx`update public.crm_tasks set due_date=current_date+1 where id=${task.id}`;
-    await tx`select public.crm_queue_reminders()`;
     assert.equal(
       (await tx`select id from public.crm_automation_events where source_id=${task.id} and status='queued'`).length,
       1,
-      "rescheduled work creates new occurrence",
+      "rescheduled work immediately creates a new occurrence without waiting for cron",
     );
     await tx`update public.crm_tasks set status='done' where id=${task.id}`;
-    await tx`select public.crm_queue_reminders()`;
     assert.equal(
       (await tx`select id from public.crm_automation_events where source_id=${task.id} and status='queued'`).length,
       0,
-      "completed work cancels pending reminders",
+      "completed work immediately cancels pending reminders without waiting for cron",
     );
     console.log(
       "Passed quality database checks: retained/versioned uploads, metadata/reservation/quota/recovery, private historical downloads, derived attendance, team scope/filtering and idempotent dated reminders. All fixtures rolled back.",
