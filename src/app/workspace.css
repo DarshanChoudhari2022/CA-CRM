@@ -668,6 +668,67 @@ input[type="checkbox"] {
   font-weight: 500;
   vertical-align: middle;
 }
+
+.ai-specialist h2 {
+  font-size: 16px;
+}
+.ai-specialist p {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 0;
+}
+.ai-job-list {
+  display: grid;
+  gap: 16px;
+}
+.ai-job-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.ai-job-heading h2 {
+  margin-top: 6px;
+}
+.ai-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.ai-notice {
+  padding: 12px 14px;
+  border: 1px solid #cce0f4;
+  background: #eff6ff;
+  color: #254d73;
+  border-radius: 6px;
+  font-size: 13px;
+}
+.ai-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.ai-finding {
+  border-left: 3px solid #93c5fd;
+  padding: 0 0 0 12px;
+  margin: 12px 0;
+}
+.ai-output .ai-finding small {
+  color: var(--muted);
+}
+.ai-output h3 {
+  margin-top: 20px;
+  font-size: 15px;
+}
+.ai-output ul {
+  padding-left: 20px;
+  line-height: 1.7;
+}
+@media (max-width: 720px) {
+  .ai-job-heading {
+    flex-direction: column;
+    gap: 6px;
+  }
+}
 .daily-report-card {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

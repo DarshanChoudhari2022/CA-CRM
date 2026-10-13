@@ -1,75 +1,141 @@
-import { Download, LockKeyhole } from "lucide-react";
+import Link from "next/link";
+import { redirect } from "next/navigation";
 import { PageHead } from "@/components/page-head";
-import { rpc } from "@/modules/portal/queries";
-import { closeMonth } from "./actions";
+import { requireIdentity } from "@/modules/identity/session";
+import { loadReport, reportTimezone } from "./data";
+import { MonthActions } from "./month-actions";
+import { localMonth, monthSchema, parseVersion, previousMonth, ReportReadError } from "./report";
 
-type Report = {
-  expectedDays: number;
-  fullDays: number;
-  halfDays: number;
-  shortDays: number;
-  absentDays: number;
-  leaveDays: number;
-  incompleteDays: number;
-  totalHours: string;
-  isClosed: boolean;
-  blockers: number;
-};
-
-export default async function ReportsPage() {
-  const date = new Date();
-  date.setMonth(date.getMonth() - 1);
-  const month = date.toISOString().slice(0, 7);
-  const report = await rpc<Report>("attendance_month_summary", { p_month: month });
-  const metrics = [
-    ["Expected days", report.expectedDays],
-    ["Full days", report.fullDays],
-    ["Half days", report.halfDays],
-    ["Absent", report.absentDays],
-    ["Approved leave", report.leaveDays],
-    ["Incomplete", report.incompleteDays],
-    ["Total hours", report.totalHours],
-  ];
+export default async function ReportsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ month?: string | string[]; version?: string | string[] }>;
+}) {
+  const identity = await requireIdentity();
+  if (!["admin", "partner"].includes(identity.role)) redirect("/dashboard");
+  const filters = await searchParams;
+  let month = typeof filters.month === "string" ? filters.month : "";
+  let timezone = "";
+  let currentMonth = "";
+  let error = "";
+  let selectedVersion: number | null = null;
+  let result: Awaited<ReturnType<typeof loadReport>> | null = null;
+  try {
+    timezone = await reportTimezone(identity);
+    currentMonth = localMonth(new Date(), timezone);
+    if (filters.month === undefined) month = previousMonth(new Date(), timezone);
+    if (!monthSchema.safeParse(month).success) throw new ReportReadError("Choose a valid month (YYYY-MM).", 400);
+    selectedVersion = parseVersion(filters.version);
+    result = await loadReport(identity, month, selectedVersion);
+  } catch (failure) {
+    error =
+      failure instanceof ReportReadError
+        ? failure.message
+        : "Report data unavailable. Refresh or contact your administrator.";
+  }
+  const exportQuery = new URLSearchParams({ month });
+  if (result?.version != null) exportQuery.set("version", String(result.version));
+  const metrics = result
+    ? [
+        ["Expected days", result.report.expectedDays],
+        ["Full days", result.report.fullDays],
+        ["Half days", result.report.halfDays],
+        ["Short days", result.report.shortDays],
+        ["Absent", result.report.absentDays],
+        ["Approved leave", result.report.leaveDays],
+        ["Incomplete", result.report.incompleteDays],
+        ["Total hours", result.report.totalHours],
+      ]
+    : [];
   return (
     <>
       <PageHead
         eyebrow="Reports"
         title="Monthly attendance"
-        description={`Reconcile ${month} before closing an immutable report version.`}
-        action={
-          <div style={{ display: "flex", gap: 10 }}>
-            <a className="button button-secondary" href={`/reports/export?month=${month}`}>
-              <Download size={17} /> Export CSV
-            </a>
-            <form action={closeMonth}>
-              <input type="hidden" name="month" value={month} />
-              <button type="submit" className="button button-primary" disabled={report.isClosed || report.blockers > 0}>
-                <LockKeyhole size={17} /> {report.isClosed ? "Month closed" : "Close month"}
-              </button>
-            </form>
-          </div>
-        }
+        description="Review a month, export a saved report, or reopen it for corrections."
       />
-      <section className="grid grid-4">
-        {metrics.map(([name, value]) => (
-          <article className="card" key={name}>
-            <span className="stat-label">{name}</span>
-            <strong className="stat-value">{value}</strong>
-          </article>
-        ))}
-      </section>
-      {report.blockers > 0 && (
-        <section className="section card">
-          <StatusPillLike /> <strong>{report.blockers} records must be resolved before this month can close.</strong>
+      <form className="filters" action="/reports">
+        <label htmlFor="report-month">Month</label>
+        <input
+          id="report-month"
+          name="month"
+          type="month"
+          required
+          defaultValue={monthSchema.safeParse(month).success ? month : undefined}
+        />
+        <button className="button button-secondary" type="submit">
+          View month
+        </button>
+      </form>
+      {error && (
+        <section className="card section">
+          <p className="form-error" role="alert">
+            {error}
+          </p>
+          <Link href="/reports">Return to previous month</Link>
         </section>
       )}
+      {result && (
+        <>
+          <section className="card section">
+            <h2>
+              {month} · {result.live.isClosed ? "Closed" : "Open"}
+            </h2>
+            <p>
+              {result.version == null
+                ? "Live report — values may change."
+                : `Saved report version ${result.version} · Generated ${result.generatedAt}`}
+            </p>
+            <p className="stat-note">Timezone: {timezone}</p>
+            <a className="button button-secondary" href={`/reports/export?${exportQuery}`}>
+              Export {result.version == null ? "live" : "snapshot"} CSV
+            </a>
+            {result.history.length > 0 && (
+              <form className="filters section" action="/reports">
+                <input type="hidden" name="month" value={month} />
+                <label htmlFor="report-version">Report version</label>
+                <select
+                  id="report-version"
+                  name="version"
+                  defaultValue={selectedVersion == null ? "" : String(selectedVersion)}
+                >
+                  <option value="">{result.live.isClosed ? "Latest closed snapshot" : "Current live report"}</option>
+                  {result.history.map((item) => (
+                    <option key={item.version} value={item.version}>
+                      Version {item.version} · {item.generated_at}
+                    </option>
+                  ))}
+                </select>
+                <button className="button button-secondary" type="submit">
+                  View version
+                </button>
+              </form>
+            )}
+          </section>
+          <section className="grid grid-4">
+            {metrics.map(([label, value]) => (
+              <article className="card" key={label}>
+                <span className="stat-label">{label}</span>
+                <strong className="stat-value">{value}</strong>
+              </article>
+            ))}
+          </section>
+          {selectedVersion === null ? (
+            <MonthActions
+              key={`${month}-${result.live.isClosed}`}
+              month={month}
+              closed={result.live.isClosed}
+              blocked={result.live.blockers > 0}
+              completed={month < currentMonth}
+            />
+          ) : (
+            <p className="section">
+              Viewing a saved version.{" "}
+              <Link href={`/reports?month=${month}`}>Return to the current month view to close or reopen.</Link>
+            </p>
+          )}
+        </>
+      )}
     </>
-  );
-}
-function StatusPillLike() {
-  return (
-    <span className="status status-amber" style={{ marginRight: 10 }}>
-      Action required
-    </span>
   );
 }

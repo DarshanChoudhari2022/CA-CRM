@@ -109,6 +109,45 @@ try {
     await tx`update public.profiles set role='admin' where user_id=${admin}`;
     await tx.unsafe("set local role authenticated");
     const ticket = await save("support", { title: "Query", status: "open", owner_id: m.id });
+    const [reference] =
+      await tx`select public.ca_save_knowledge('Reviewed policy','This is a verified test policy for CA workpapers.','https://example.invalid/policy','India',current_date+30) as id`;
+    await tx`select public.ca_review_knowledge(${reference.id},'approved')`;
+    const workpaperRequest = randomUUID();
+    const [workpaper] =
+      await tx`select public.ca_create_job('taxation','Test tax review','Prepare a review of supplied firm information.','India','FY 2026-27',${converted.id},${workpaperRequest}) as id`;
+    const [retryWorkpaper] =
+      await tx`select public.ca_create_job('taxation','Test tax review','Prepare a review of supplied firm information.','India','FY 2026-27',${converted.id},${workpaperRequest}) as id`;
+    assert.equal(workpaper.id, retryWorkpaper.id, "workpaper creation is idempotent");
+    await rejected(
+      (sp) =>
+        sp`select public.ca_create_job('finance','Changed brief','Prepare a review of supplied firm information.','India','FY 2026-27',${converted.id},${workpaperRequest})`,
+      "idempotency rejects changed payload",
+    );
+    const lease = randomUUID();
+    await tx`select public.ca_start_job(${workpaper.id},${lease},'fixture-model','[]'::jsonb)`;
+    await rejected(
+      (sp) => sp`select public.ca_start_job(${workpaper.id},${randomUUID()},'fixture-model','[]'::jsonb)`,
+      "concurrent AI run denied",
+    );
+    await rejected(
+      (sp) => sp`select public.ca_finish_job(${workpaper.id},${org.id},${lease},null,'Fake failure')`,
+      "users cannot forge AI results",
+    );
+    await tx.unsafe("reset role");
+    const draft = {
+      summary: "Review this fixture",
+      findings: [],
+      missingInformation: ["Source evidence"],
+      nextActions: ["Obtain evidence"],
+      reviewNotes: "Human review required",
+    };
+    await tx`select public.ca_finish_job(${workpaper.id},${org.id},${lease},${sql.json(draft)},null)`;
+    await tx.unsafe("set local role authenticated");
+    await tx`select public.ca_review_job(${workpaper.id},'approved','Reviewed the fixture and identified missing information.')`;
+    await rejected(
+      (sp) => sp`select public.ca_review_job(${workpaper.id},'rejected','Attempted to change a finished review.')`,
+      "reviewed workpaper is immutable",
+    );
     const request = randomUUID();
     await tx`select public.crm_reserve_send(${request},${ticket},'gmail','test@example.invalid','Test','Reviewed body')`;
     await rejected(
@@ -117,6 +156,45 @@ try {
       "duplicate send denied",
     );
     await tx`select set_config('request.jwt.claim.sub',${member},true)`;
+    assert.equal((await tx`select id from public.ca_agent_jobs`).length, 0, "employee cannot read admin workpaper");
+    await rejected(
+      (sp) => sp`select public.ca_review_knowledge(${reference.id},'retired')`,
+      "employee cannot approve reference material",
+    );
+    await rejected(
+      (sp) => sp`select public.ca_review_job(${workpaper.id},'approved','Unauthorized reviewer attempt.')`,
+      "employee cannot approve workpaper",
+    );
+    const [memberPaper] =
+      await tx`select public.ca_create_job('documentation','Employee evidence review','Review the assigned task using the supplied evidence.','India','Fixture period',${converted.id},${randomUUID()}) as id`;
+    await tx`select set_config('request.jwt.claim.sub',${admin},true)`;
+    await rejected(
+      (sp) => sp`select public.ca_start_job(${memberPaper.id},${randomUUID()},'fixture-model','[]'::jsonb)`,
+      "administrator cannot widen employee evidence through generation",
+    );
+    await tx`select set_config('request.jwt.claim.sub',${member},true)`;
+    const memberLease = randomUUID();
+    const evidence = [{ id: `tasks:${ownTask}`, title: "Assigned task", content: "Own employee task evidence" }];
+    await tx`select public.ca_start_job(${memberPaper.id},${memberLease},'fixture-model',${sql.json(evidence)})`;
+    await tx.unsafe("reset role");
+    await tx`select public.ca_finish_job(${memberPaper.id},${org.id},${memberLease},${sql.json(draft)},null)`;
+    await tx.unsafe("set local role authenticated");
+    assert.equal(
+      (await tx`select id from public.ca_agent_jobs`).length,
+      1,
+      "creator sees own currently authorized evidence",
+    );
+    await tx.unsafe("reset role");
+    await tx`update public.crm_tasks set owner_id=${a.id} where id=${ownTask}`;
+    await tx.unsafe("set local role authenticated");
+    assert.equal(
+      (await tx`select id from public.ca_agent_jobs`).length,
+      0,
+      "reassignment cannot leak through saved evidence",
+    );
+    await tx.unsafe("reset role");
+    await tx`update public.crm_tasks set owner_id=${m.id} where id=${ownTask}`;
+    await tx.unsafe("set local role authenticated");
     assert.equal((await tx`select id from public.crm_tasks`).length, 1, "member sees only assigned tasks");
     await tx`select public.crm_save('tasks',${ownTask},${sql.json({ title: "Assigned task", status: "done", owner_id: m.id })})`;
     await rejected(

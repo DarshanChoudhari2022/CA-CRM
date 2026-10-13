@@ -18,7 +18,8 @@ A modular internal portal for P S B & Associates LLP. Release 1 implements emplo
 - Responsive PSB-branded portal.
 - Admin-generated employee logins, first-login password change and private credential handoff.
 - Daily work plans, progress updates and work history.
-- Six applied Supabase migrations, daily reconciliation and immutable month snapshots.
+- Additive Supabase migrations, daily reconciliation and immutable month snapshots.
+- CA AI workpapers for tax, compliance, legal paperwork, documentation and finance, with saved evidence and administrator review.
 
 The CRM suite now includes clients, leads, documents, compliance tasks, invoices/manual payments, tasks, support, reports and automation operations. Optional Groq/Gmail/WhatsApp integrations require configuration. Inbound sync, delivery receipts, bank reconciliation, payroll, biometrics and GPS/geofencing remain outside the implemented baseline. See [current scope and activation](docs/crm-suite-delivery.md).
 
@@ -34,12 +35,13 @@ The portal is a modular monolith: Next.js supplies the web and server layer; Sup
 4. Apply migrations with npx supabase db push --db-url <connection-url>.
 5. Configure SUPABASE_SERVICE_ROLE_KEY locally, then run npm run bootstrap:admin to create office@psbassociates.in as the main admin.
 
-The supplied project has six attendance migrations plus five suite migrations applied. For an existing attendance installation, apply missing suite versions with `node --env-file=.env.local scripts/apply-suite-migrations.mjs`. Administrator activation requires the server-side service-role key. See [employee workspace](docs/employee-workspace.md) for account creation and employee capabilities. Use `/admin/login` or `/employee/login`, then open modules from `/modules`.
+For an existing attendance installation, apply missing suite versions with `node --env-file=.env.local scripts/apply-suite-migrations.mjs`. Administrator activation requires the server-side service-role key. See [employee workspace](docs/employee-workspace.md) for account creation and employee capabilities. Use `/admin/login` or `/employee/login`, then open modules from `/modules`; CA workpapers are at `/crm/ai-team`.
 
 ## Quality checks
 
 Run npm run typecheck, npm run lint, npm test and npm run build. See [setup and operations](docs/setup.md) for onboarding and production requirements.
 Run `node --env-file=.env.local scripts/test-crm-db.mjs` and `node --env-file=.env.local scripts/test-workspace-db.mjs` for rollback-only database permission/transition tests. Provider unit tests are mocked and do not send messages.
+Additional rollback-only checks: `scripts/test-security-db.mjs`, `scripts/test-attendance-integrity-db.mjs` and `scripts/test-daily-report-db.mjs`. The GitHub verification workflow enforces the application checks on pushes and pull requests.
 
 ## Product documents
 
@@ -53,3 +55,4 @@ Run `node --env-file=.env.local scripts/test-crm-db.mjs` and `node --env-file=.e
 
 Brand assets under public/brand were copied from the existing PSB website. Secrets, .env files and employee exports are excluded from Git.
 
+- [System verdict, stack rating, CA AI workflow and remaining enterprise requirements](docs/system-verdict.md)

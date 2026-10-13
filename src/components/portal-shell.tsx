@@ -2,7 +2,7 @@
 import { ArrowLeftRight, LogOut, Menu, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { signOut } from "@/app/(portal)/actions";
 import type { PortalIdentity } from "@/modules/identity/session";
 import { getPendingApprovalCount } from "@/modules/portal/approval-count";
@@ -16,7 +16,18 @@ export function PortalShell({ children, identity }: { children: React.ReactNode;
   const links = workspaceNavigation(workspace, identity.role);
   const [menuOpen, setMenuOpen] = useState(false);
   const [approvalCount, setApprovalCount] = useState(0);
+  const drawer = useRef<HTMLDivElement>(null);
+  const opener = useRef<HTMLButtonElement>(null);
+  const sidebar = useRef<HTMLElement>(null);
+  const header = useRef<HTMLElement>(null);
+  const content = useRef<HTMLElement>(null);
+  const previousPath = useRef(path);
   const closeMenu = () => setMenuOpen(false);
+  useEffect(() => {
+    // Also close on browser history/programmatic navigation.
+    if (previousPath.current !== path) setMenuOpen(false);
+    previousPath.current = path;
+  }, [path]);
   useEffect(() => {
     if (workspace !== "attendance" || identity.role === "employee") return;
     let cancelled = false;
@@ -48,14 +59,72 @@ export function PortalShell({ children, identity }: { children: React.ReactNode;
   }, [workspace, identity.role]);
   useEffect(() => {
     if (!menuOpen) return;
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setMenuOpen(false);
+    if (window.innerWidth > 720) {
+      setMenuOpen(false);
+      return;
+    }
+    const panel = drawer.current;
+    if (!panel) return;
+    const active = document.activeElement;
+    const previousFocus =
+      active instanceof HTMLElement && active !== document.body && !panel.contains(active) ? active : opener.current;
+    const previousOverflow = document.body.style.overflow;
+    const backgrounds = [sidebar.current, header.current, content.current].filter((node) => node !== null);
+    const inertValues = backgrounds.map((node) => node.getAttribute("inert"));
+    const focusable = () =>
+      Array.from(panel.querySelectorAll<HTMLElement>("*")).filter(
+        (node) => node.tabIndex >= 0 && !node.hasAttribute("disabled") && !node.closest("[hidden], [inert]"),
+      );
+    const focusFirst = () => (focusable()[0] ?? panel).focus();
+    const onFocus = (event: FocusEvent) => {
+      if (event.target instanceof Node && !panel.contains(event.target)) focusFirst();
     };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setMenuOpen(false);
+      }
+      if (event.key !== "Tab") return;
+      const targets = focusable();
+      const first = targets[0] ?? panel;
+      const last = targets.at(-1) ?? panel;
+      if (event.shiftKey && (document.activeElement === first || document.activeElement === panel)) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && (document.activeElement === last || document.activeElement === panel)) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    const onResize = () => {
+      if (window.innerWidth > 720) setMenuOpen(false);
+    };
+    backgrounds.forEach((node) => {
+      node.setAttribute("inert", "");
+    });
     document.addEventListener("keydown", onKeyDown);
+    document.addEventListener("focusin", onFocus);
+    window.addEventListener("resize", onResize);
     document.body.style.overflow = "hidden";
+    focusFirst();
     return () => {
       document.removeEventListener("keydown", onKeyDown);
-      document.body.style.overflow = "";
+      document.removeEventListener("focusin", onFocus);
+      window.removeEventListener("resize", onResize);
+      backgrounds.forEach((node, index) => {
+        const value = inertValues[index];
+        if (value === null) node.removeAttribute("inert");
+        else node.setAttribute("inert", value);
+      });
+      document.body.style.overflow = previousOverflow;
+      if (window.innerWidth > 720) {
+        const destination =
+          sidebar.current?.querySelector<HTMLElement>('a[aria-current="page"]') ??
+          sidebar.current?.querySelector<HTMLElement>("a[href]");
+        destination?.focus();
+      } else if (previousFocus?.isConnected && !previousFocus.closest("[hidden], [inert]")) {
+        previousFocus.focus();
+      } else if (opener.current?.isConnected) opener.current.focus();
     };
   }, [menuOpen]);
   const name = workspace === "crm" ? "CA CRM" : workspace === "attendance" ? "Attendance" : "Workspaces";
@@ -85,7 +154,7 @@ export function PortalShell({ children, identity }: { children: React.ReactNode;
   });
   return (
     <div className="portal" data-workspace={workspace}>
-      <aside className="sidebar">
+      <aside className="sidebar" ref={sidebar}>
         <Brand />
         <div className="workspace-label">{name}</div>
         <nav className="nav" aria-label={`${name} navigation`}>
@@ -97,9 +166,10 @@ export function PortalShell({ children, identity }: { children: React.ReactNode;
         </div>
       </aside>
       <div className="main">
-        <header className="topbar">
+        <header className="topbar" ref={header}>
           <div className="mobile-brand">
             <button
+              ref={opener}
               className="icon-button"
               aria-label={menuOpen ? "Close menu" : "Open menu"}
               aria-expanded={menuOpen}
@@ -134,10 +204,15 @@ export function PortalShell({ children, identity }: { children: React.ReactNode;
             className="mobile-nav-backdrop"
             type="button"
             aria-label="Close navigation menu"
+            tabIndex={-1}
             onClick={closeMenu}
           />
         )}
-        <nav
+        <div
+          ref={drawer}
+          role="dialog"
+          aria-modal={menuOpen ? true : undefined}
+          tabIndex={-1}
           id="mobile-workspace-menu"
           className={`mobile-nav ${menuOpen ? "is-open" : ""}`}
           aria-label={`${name} mobile navigation`}
@@ -157,13 +232,13 @@ export function PortalShell({ children, identity }: { children: React.ReactNode;
               <X size={19} />
             </button>
           </div>
-          <div className="mobile-nav-links">
+          <nav className="mobile-nav-links" aria-label={`${name} navigation`}>
             {navigation}
             <Link href="/change-password" onNavigate={closeMenu}>
               <span className="mobile-nav-link-icon">↗</span>
               Change password
             </Link>
-          </div>
+          </nav>
           <div className="mobile-nav-user">
             <span className="mobile-nav-avatar">{identity.fullName.slice(0, 1).toUpperCase()}</span>
             <span>
@@ -171,8 +246,10 @@ export function PortalShell({ children, identity }: { children: React.ReactNode;
               <small>{identity.role}</small>
             </span>
           </div>
-        </nav>
-        <main className="content">{children}</main>
+        </div>
+        <main className="content" ref={content}>
+          {children}
+        </main>
       </div>
     </div>
   );

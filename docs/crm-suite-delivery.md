@@ -16,6 +16,7 @@
 | Invoices | Invoice register, issued amount/client immutability, partial payment ledger, outstanding balances, unique references and overpayment protection. Not a GST invoice generator or bank reconciliation |
 | Tasks | Assigned work with due dates, notes and todo/in-progress/blocked/done lifecycle |
 | Support | Assigned ticket inbox, notes/statuses, optional Groq draft returned for human review, manual administrator sends through Gmail/WhatsApp |
+| CA AI team | Five specialist workpaper modes, reviewed reference library, scoped evidence snapshots, validated drafts, creator-only generation, administrator review, retry state and text exports. See [current system verdict](system-verdict.md) |
 | Reports | Exact role-scoped module counts, database-aggregated collections, overdue compliance listing, paginated record lists, filtered CSV export capped at 10,000 records with formula escaping |
 | Automation operations | Daily 09:00 IST in-app compliance/overdue task reminders, acknowledgement, provider configuration indicators, outbound status log and duplicate-send guard |
 
@@ -60,7 +61,7 @@ The full template's following capabilities remain pending rather than represente
 3. Client service engagements, deduplication/import; multi-contact/activity timeline; document templates/version retention/review evidence; client-facing access.
 4. Verified statutory deadline catalogue, recurring compliance generation, reminder policies at 7/3/1 days with escalation, maintained rule versions and evidence. Current reminders queue each task once, not every interval.
 5. Invoice line items, tax validation/numbering/PDFs, trusted bank/payment reconciliation, reversals/refunds, accounting exports. Current payments are manual entries, never automated confirmations.
-6. AI retrieval from approved records, measured answer evaluation, approval trail and escalation rules; no autonomous legal/tax advice or execution.
+6. CA workpapers now retrieve approved reference extracts and accessible record metadata, validate source references, retain drafts/evidence and record reviewer decisions. Live answer evaluation, file extraction/OCR and escalation rules remain pending; no autonomous legal/tax advice or execution.
 7. Advanced HR schedules/assignments, scoped team register filters, unread decision feedback, accrual/carry-forward/payroll rules and concurrency/load proof for monthly closure.
 
 Implement each phase behind scoped interfaces and migration/permission tests. This delivery does not import or activate the 152-node n8n workflow, Google Sheets stores, or Telegram. Keep Supabase authoritative and review any future import mappings explicitly.

@@ -20,6 +20,7 @@ export function workspaceNavigation(workspace: Workspace, role: PortalIdentity["
       { href: "/crm/invoices", label: "Invoices", icon: "reports" },
       { href: "/crm/tasks", label: "Tasks", icon: "work" },
       { href: "/crm/support", label: "Support", icon: "employees" },
+      { href: "/crm/ai-team", label: "CA AI team", icon: "approvals" },
       { href: "/crm/reports", label: "Reports", icon: "reports" },
       ...(["admin", "partner"].includes(role)
         ? [{ href: "/crm/automations", label: "Automations", icon: "settings" as const }]

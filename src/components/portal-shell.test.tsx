@@ -40,8 +40,10 @@ import { PortalShell } from "./portal-shell";
 
 let container: HTMLDivElement, root: Root;
 beforeEach(() => {
+  vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   state.path = "/attendance";
   state.count = 0;
+  Object.defineProperty(window, "innerWidth", { configurable: true, writable: true, value: 390 });
   container = document.createElement("div");
   document.body.append(container);
   root = createRoot(container);
@@ -49,6 +51,7 @@ beforeEach(() => {
 afterEach(async () => {
   await act(async () => root.unmount());
   container.remove();
+  vi.unstubAllGlobals();
 });
 async function render() {
   await act(async () =>
@@ -68,6 +71,79 @@ async function render() {
   );
 }
 describe("workspace shell mobile interactions", () => {
+  it("moves focus into the dialog, wraps Tab in both directions and restores the opener", async () => {
+    await render();
+    const button = container.querySelector<HTMLButtonElement>('[aria-controls="mobile-workspace-menu"]');
+    button?.focus();
+    await act(async () => button?.click());
+    const panel = container.querySelector<HTMLElement>('[role="dialog"]');
+    const first = panel?.querySelector<HTMLButtonElement>("button");
+    const last = panel?.querySelector<HTMLAnchorElement>('a[href="/change-password"]');
+    expect(document.activeElement).toBe(first);
+    expect(panel?.getAttribute("aria-modal")).toBe("true");
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Tab", shiftKey: true, cancelable: true }));
+    expect(document.activeElement).toBe(last);
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Tab", cancelable: true }));
+    expect(document.activeElement).toBe(first);
+    await act(async () => document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" })));
+    expect(document.activeElement).toBe(button);
+  });
+  it("keeps background focus out and restores preexisting inert/scroll state", async () => {
+    await render();
+    document.body.style.overflow = "scroll";
+    container.querySelector(".sidebar")?.setAttribute("inert", "retained");
+    const button = container.querySelector<HTMLButtonElement>('[aria-controls="mobile-workspace-menu"]');
+    await act(async () => button?.click());
+    expect(container.querySelector(".topbar")?.hasAttribute("inert")).toBe(true);
+    expect(container.querySelector(".content")?.hasAttribute("inert")).toBe(true);
+    expect(document.body.style.overflow).toBe("hidden");
+    container.querySelector<HTMLAnchorElement>('.topbar a[href="/modules"]')?.focus();
+    expect(container.querySelector('[role="dialog"]')?.contains(document.activeElement)).toBe(true);
+    await act(async () => container.querySelector<HTMLButtonElement>(".mobile-nav-close")?.click());
+    expect(container.querySelector(".sidebar")?.getAttribute("inert")).toBe("retained");
+    expect(container.querySelector(".topbar")?.hasAttribute("inert")).toBe(false);
+    expect(container.querySelector(".content")?.hasAttribute("inert")).toBe(false);
+    expect(document.body.style.overflow).toBe("scroll");
+    document.body.style.overflow = "";
+  });
+  it("cleans up on desktop resize and remains closed when returning to phone width", async () => {
+    await render();
+    await act(async () =>
+      container.querySelector<HTMLButtonElement>('[aria-controls="mobile-workspace-menu"]')?.click(),
+    );
+    await act(async () => {
+      window.innerWidth = 1000;
+      window.dispatchEvent(new Event("resize"));
+    });
+    expect(container.querySelector<HTMLElement>("#mobile-workspace-menu")?.hidden).toBe(true);
+    expect(container.querySelector(".content")?.hasAttribute("inert")).toBe(false);
+    expect(document.body.style.overflow).toBe("");
+    expect(container.querySelector(".sidebar")?.contains(document.activeElement)).toBe(true);
+    await act(async () => {
+      window.innerWidth = 390;
+      window.dispatchEvent(new Event("resize"));
+    });
+    expect(container.querySelector<HTMLElement>("#mobile-workspace-menu")?.hidden).toBe(true);
+  });
+  it("cleans up on history navigation and unmount", async () => {
+    await render();
+    await act(async () =>
+      container.querySelector<HTMLButtonElement>('[aria-controls="mobile-workspace-menu"]')?.click(),
+    );
+    state.path = "/leave";
+    await render();
+    expect(container.querySelector<HTMLElement>("#mobile-workspace-menu")?.hidden).toBe(true);
+    await act(async () =>
+      container.querySelector<HTMLButtonElement>('[aria-controls="mobile-workspace-menu"]')?.click(),
+    );
+    await act(async () => root.render(null));
+    expect(document.body.style.overflow).toBe("");
+    const outside = document.createElement("button");
+    document.body.append(outside);
+    outside.focus();
+    expect(document.activeElement).toBe(outside);
+    outside.remove();
+  });
   it("shows the pending count in desktop and mobile navigation and clears it after a decision", async () => {
     state.count = 3;
     await render();
@@ -104,6 +180,7 @@ describe("workspace shell mobile interactions", () => {
     expect(container.querySelector(".mobile-nav-backdrop")).not.toBeNull();
     await act(async () => button?.click());
     expect(menu?.hidden).toBe(true);
+    expect(document.activeElement).toBe(button);
   });
   it("closes the drawer from the backdrop and Escape", async () => {
     await render();

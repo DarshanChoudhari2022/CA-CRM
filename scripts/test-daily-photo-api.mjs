@@ -105,6 +105,32 @@ try {
     console.log(
       `Passed authenticated dashboard task/photo/shift rendering; full response ${Math.round(performance.now() - start)} ms.`,
     );
+    if (process.env.PHOTO_VERIFY_AI === "1") {
+      const brief = await member.rpc("ca_create_job", {
+        p_kind: "documentation",
+        p_title: "Generated workpaper fixture",
+        p_brief: "Prepare a checklist of evidence for this generated test workpaper.",
+        p_jurisdiction: "India",
+        p_period: "Fixture period",
+        p_client: null,
+        p_request: randomUUID(),
+      });
+      assert.ok(!brief.error, "fixture workpaper saved through authenticated RPC");
+      const workspace = await fetch(`${base}/crm/ai-team?workpaper=${brief.data}`, { headers: { Cookie: cookie } });
+      const workspaceHtml = await workspace.text();
+      assert.equal(workspace.status, 200, "authenticated AI workspace");
+      assert.ok(
+        workspaceHtml.includes("Generated workpaper fixture") &&
+          workspaceHtml.includes("Reference library") &&
+          workspaceHtml.includes("Tax preparation"),
+        "new AI workbench renders actual fixture and specialists",
+      );
+      const exported = await fetch(`${base}/crm/ai-team/export?id=${brief.data}`, { headers: { Cookie: cookie } });
+      assert.equal(exported.status, 200, "own workpaper export");
+      assert.ok((await exported.text()).includes("Generated workpaper fixture"), "workpaper export has saved brief");
+      assert.ok(exported.headers.get("cache-control")?.includes("no-store"), "private workpaper export is not cached");
+      console.log("Passed authenticated AI workbench and scoped workpaper export; no provider call made.");
+    }
   }
   console.log(
     "Passed real private photo API: generated PNG upload, metadata verification, authenticated download, signed preview, unreserved upload denied.",
@@ -120,6 +146,8 @@ try {
   if (orgId)
     await sql.begin(async (tx) => {
       await tx`delete from public.audit_logs where organization_id=${orgId}`;
+      await tx`delete from public.ca_agent_jobs where organization_id=${orgId}`;
+      await tx`delete from public.ca_knowledge where organization_id=${orgId}`;
       await tx`delete from public.daily_report_photos where organization_id=${orgId}`;
       await tx`delete from public.daily_work_reports where organization_id=${orgId}`;
       await tx`delete from public.attendance_days where organization_id=${orgId}`;

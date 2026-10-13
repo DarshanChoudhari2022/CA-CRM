@@ -14,6 +14,11 @@ try {
     "20261012151000_photo_discard_intent",
     "20261012160000_approval_badge",
     "20261012161000_reviewer_tenant_scope",
+    "20261013090000_ca_ai_workbench",
+    "20261013100000_security_hardening",
+    "20261013101000_attendance_integrity",
+    "20261013102000_ai_context_validation",
+    "20261013103000_ai_workpaper_scope",
   ]) {
     const version = name.split("_")[0];
     const source = await readFile(new URL(`../supabase/migrations/${name}.sql`, import.meta.url), "utf8");
