@@ -681,6 +681,68 @@ input[type="checkbox"] {
   display: grid;
   gap: 16px;
 }
+.document-versions {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+.document-version {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+.document-version > div:first-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.document-versions .document-version small {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+}
+.approval-actions {
+  display: grid;
+  gap: 10px;
+  min-width: 160px;
+}
+.approval-evidence p {
+  font-size: 12px;
+  margin: 4px 0;
+}
+.register-filters {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  align-items: end;
+}
+.card .register-filters label {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.register-filters input,
+.register-filters select {
+  min-width: 0;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+@media (max-width: 720px) {
+  .register-filters {
+    grid-template-columns: 1fr;
+  }
+  .document-version {
+    align-items: flex-start;
+  }
+}
 .ai-job-heading {
   display: flex;
   align-items: flex-start;

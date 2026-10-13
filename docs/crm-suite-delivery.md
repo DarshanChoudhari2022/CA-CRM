@@ -11,14 +11,14 @@
 | Attendance and leave | Existing punches, corrections/approvals, monthly histories, leave balances/requests/decisions, pending-request cancellation, daily work, branch holiday creation, excused absence annotations, monthly reports/export and close/reopen snapshots |
 | Clients | Contact details, notes, owner assignment, active/inactive lifecycle, search/status filters |
 | Leads | Contact details, pipeline stages, owner/follow-up date, conversion to client with duplicate conversion protection |
-| Documents | Client/owner/date checklist records, requested/received/reviewed/rejected states, private uploads up to 10 MB, short-lived download URLs. Receipt is not correctness verification |
+| Documents | Checklist states, private retained versions (10 per document, 10 MB each), interrupted-upload finish/discard recovery and short-lived version download URLs. Receipt is not correctness verification |
 | Compliance | Maintained per-client tasks, due dates, owner, pending/in-progress/blocked/filed states. Dates must be entered and verified by the firm; no statutory-date inference or filing |
 | Invoices | Invoice register, issued amount/client immutability, partial payment ledger, outstanding balances, unique references and overpayment protection. Not a GST invoice generator or bank reconciliation |
 | Tasks | Assigned work with due dates, notes and todo/in-progress/blocked/done lifecycle |
 | Support | Assigned ticket inbox, notes/statuses, optional Groq draft returned for human review, manual administrator sends through Gmail/WhatsApp |
 | CA AI team | Five specialist workpaper modes, reviewed reference library, scoped evidence snapshots, validated drafts, creator-only generation, administrator review, retry state and text exports. See [current system verdict](system-verdict.md) |
 | Reports | Exact role-scoped module counts, database-aggregated collections, overdue compliance listing, paginated record lists, filtered CSV export capped at 10,000 records with formula escaping |
-| Automation operations | Daily 09:00 IST in-app compliance/overdue task reminders, acknowledgement, provider configuration indicators, outbound status log and duplicate-send guard |
+| Automation operations | Dated in-app compliance 7/3/1/0-day and daily overdue reminders, task day-before/overdue notices, immediate refresh on source changes, acknowledgement, provider indicators and outbound status log |
 
 Authenticated database users have read policies but no direct CRM table write privileges. Mutations use allowlisted security-definer functions which derive organization and actor from the session. Employees can edit assigned operational records; only administrators/partners create/assign records and manage financial data. Managers see their direct reports' assignments. Private uploaded files are isolated through document ownership policies.
 
@@ -58,10 +58,10 @@ The full template's following capabilities remain pending rather than represente
 
 1. Provider activation and supervised mailbox/WhatsApp send testing; SMTP recovery test; authenticated mobile/browser journeys; restore/load/accessibility pilot gates.
 2. Authenticated inbound Gmail/WhatsApp webhook ingestion, sender/client identity matching, attachments/quarantine, durable jobs, signatures, delivery callbacks, retries with provider reconciliation, dead-letter/replay/pause controls.
-3. Client service engagements, deduplication/import; multi-contact/activity timeline; document templates/version retention/review evidence; client-facing access.
-4. Verified statutory deadline catalogue, recurring compliance generation, reminder policies at 7/3/1 days with escalation, maintained rule versions and evidence. Current reminders queue each task once, not every interval.
+3. Client service engagements, deduplication/import; multi-contact/activity timeline; document templates/professional review evidence; client-facing access. Version retention and interrupted-upload recovery are implemented.
+4. Verified statutory deadline catalogue, recurring compliance generation, escalation policies and maintained rule versions/evidence. Dated 7/3/1/0-day and daily overdue reminders are implemented.
 5. Invoice line items, tax validation/numbering/PDFs, trusted bank/payment reconciliation, reversals/refunds, accounting exports. Current payments are manual entries, never automated confirmations.
 6. CA workpapers now retrieve approved reference extracts and accessible record metadata, validate source references, retain drafts/evidence and record reviewer decisions. Live answer evaluation, file extraction/OCR and escalation rules remain pending; no autonomous legal/tax advice or execution.
-7. Advanced HR schedules/assignments, scoped team register filters, unread decision feedback, accrual/carry-forward/payroll rules and concurrency/load proof for monthly closure.
+7. Advanced HR schedules/assignments, unread decision feedback and accrual/carry-forward/payroll rules. Scoped team register filters and actual concurrent month-close acceptance are implemented; realistic load testing remains required.
 
 Implement each phase behind scoped interfaces and migration/permission tests. This delivery does not import or activate the 152-node n8n workflow, Google Sheets stores, or Telegram. Keep Supabase authoritative and review any future import mappings explicitly.

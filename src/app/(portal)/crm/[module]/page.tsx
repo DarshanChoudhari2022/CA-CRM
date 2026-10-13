@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { PageHead } from "@/components/page-head";
 import { createClient } from "@/lib/supabase/server";
 import { type CrmOption, type CrmRecord, crmModules, isCrmModule } from "@/modules/crm/config";
+import type { DocumentVersion } from "@/modules/crm/documents";
 import { requireIdentity } from "@/modules/identity/session";
 import { SupportTools } from "../support-tools";
 import { DocumentUpload } from "./document-upload";
@@ -26,6 +27,7 @@ export default async function CrmPage({
   let query = client
     .from(`crm_${module}`)
     .select("*", { count: "exact" })
+    .eq("organization_id", identity.organizationId)
     .order("created_at", { ascending: false })
     .order("id")
     .range((page - 1) * 50, page * 50 - 1);
@@ -41,6 +43,19 @@ export default async function CrmPage({
   const items = (records.data ?? []) as CrmRecord[];
   const options = (clients.data ?? []) as CrmOption[];
   const people = (employees.data ?? []).map((e) => ({ id: e.id, title: e.full_name }));
+  const versions =
+    module === "documents" && items.length
+      ? await client
+          .from("crm_document_versions")
+          .select("id,document_id,version,filename,byte_size,state,storage_path,uploaded_by,created_at")
+          .eq("organization_id", identity.organizationId)
+          .in(
+            "document_id",
+            items.map((item) => item.id),
+          )
+          .order("version", { ascending: false })
+      : null;
+  if (versions?.error) throw new Error("Document versions unavailable.");
   const payments =
     module === "invoices" ? await client.rpc("crm_invoice_receipts", { p_ids: items.map((i) => i.id) }) : null;
   if (payments?.error) throw new Error("Payment totals unavailable.");
@@ -114,7 +129,15 @@ export default async function CrmPage({
             {module === "leads" && admin && !item.client_id && <ConvertButton id={item.id} />}
             {module === "support" && <SupportTools id={item.id} admin={admin} />}
             {module === "documents" && (
-              <DocumentUpload id={item.id} organizationId={identity.organizationId} storagePath={item.storage_path} />
+              <DocumentUpload
+                id={item.id}
+                userId={identity.userId}
+                admin={admin}
+                versions={((versions?.data as DocumentVersion[]) ?? []).filter(
+                  (version) => version.document_id === item.id,
+                )}
+                storagePath={item.storage_path}
+              />
             )}
             {module === "invoices" && admin && item.status === "issued" && (
               <details>

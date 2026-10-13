@@ -1,6 +1,6 @@
 # PSB Workspace
 
-A modular internal portal for P S B & Associates LLP. Release 1 implements employee attendance and leave management; future CA practice modules remain separately scoped.
+A modular internal portal for P S B & Associates LLP. Attendance and leave operate in a separate workspace from the CA CRM suite.
 
 ## Implemented
 
@@ -20,6 +20,7 @@ A modular internal portal for P S B & Associates LLP. Release 1 implements emplo
 - Daily work plans, progress updates and work history.
 - Additive Supabase migrations, daily reconciliation and immutable month snapshots.
 - CA AI workpapers for tax, compliance, legal paperwork, documentation and finance, with saved evidence and administrator review.
+- Retained private document versions, interrupted-upload recovery, filtered team attendance and dated in-app reminders.
 
 The CRM suite now includes clients, leads, documents, compliance tasks, invoices/manual payments, tasks, support, reports and automation operations. Optional Groq/Gmail/WhatsApp integrations require configuration. Inbound sync, delivery receipts, bank reconciliation, payroll, biometrics and GPS/geofencing remain outside the implemented baseline. See [current scope and activation](docs/crm-suite-delivery.md).
 
@@ -41,7 +42,7 @@ For an existing attendance installation, apply missing suite versions with `node
 
 Run npm run typecheck, npm run lint, npm test and npm run build. See [setup and operations](docs/setup.md) for onboarding and production requirements.
 Run `node --env-file=.env.local scripts/test-crm-db.mjs` and `node --env-file=.env.local scripts/test-workspace-db.mjs` for rollback-only database permission/transition tests. Provider unit tests are mocked and do not send messages.
-Additional rollback-only checks: `scripts/test-security-db.mjs`, `scripts/test-attendance-integrity-db.mjs` and `scripts/test-daily-report-db.mjs`. The GitHub verification workflow enforces the application checks on pushes and pull requests.
+Additional rollback-only checks: `scripts/test-security-db.mjs`, `scripts/test-attendance-integrity-db.mjs`, `scripts/test-daily-report-db.mjs` and `scripts/test-quality-db.mjs`. `scripts/test-attendance-concurrency-db.mjs` commits only generated fixtures to exercise simultaneous transactions and removes them afterwards. CI runs application checks and isolated fresh-database migration replay with database tests. See [quality upgrade and acceptance boundaries](docs/quality-upgrade.md).
 
 ## Product documents
 

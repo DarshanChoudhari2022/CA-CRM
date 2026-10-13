@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { requireIdentity } from "@/modules/identity/session";
 import { rpc } from "@/modules/portal/queries";
 import { CancelRequest } from "../operations/forms";
+import { reportTimezone } from "../reports/data";
+import { localMonth } from "../reports/report";
 import { CorrectionForm } from "./correction-form";
 
 type Day = {
@@ -19,10 +21,11 @@ type Day = {
 
 export default async function AttendancePage({ searchParams }: { searchParams: Promise<{ month?: string }> }) {
   const identity = await requireIdentity();
+  const timezone = await reportTimezone(identity);
   const filters = await searchParams;
   const month = /^\d{4}-(0[1-9]|1[0-2])$/.test(filters.month ?? "")
     ? (filters.month ?? "")
-    : new Date().toISOString().slice(0, 7);
+    : localMonth(new Date(), timezone);
   const client = await createClient();
   const [days, correctionResult] = await Promise.all([
     rpc<Day[]>("my_attendance_history", { p_month: month }),

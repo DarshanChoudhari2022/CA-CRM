@@ -9,6 +9,11 @@ type Approval = {
   summary: string;
   reason: string;
   submittedAt: string;
+  originalIn?: string | null;
+  originalOut?: string | null;
+  proposedIn?: string;
+  proposedOut?: string;
+  isStale?: boolean;
 };
 
 export default async function ApprovalsPage() {
@@ -37,10 +42,27 @@ export default async function ApprovalsPage() {
                 <tr key={`${item.kind}-${item.id}`}>
                   <td>{item.employee}</td>
                   <td style={{ textTransform: "capitalize" }}>{item.kind}</td>
-                  <td>{item.summary}</td>
+                  <td>
+                    {item.summary}
+                    {item.kind === "attendance" && (
+                      <div className="approval-evidence">
+                        <p>
+                          Original: {item.originalIn ?? "Missing"} – {item.originalOut ?? "Missing"}
+                        </p>
+                        <p>
+                          Proposed: {item.proposedIn} – {item.proposedOut}
+                        </p>
+                        {item.isStale && (
+                          <p className="form-error">
+                            Attendance changed. Reject this request and ask the employee to resubmit.
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </td>
                   <td>{item.reason}</td>
                   <td>
-                    <DecisionButtons kind={item.kind} id={item.id} />
+                    <DecisionButtons kind={item.kind} id={item.id} stale={item.isStale} />
                   </td>
                 </tr>
               ))}

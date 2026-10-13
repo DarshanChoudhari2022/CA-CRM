@@ -6,10 +6,11 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import postgres from "postgres";
+import { testDatabaseOptions } from "./test-database-options.mjs";
 
 if (!process.env.SUPABASE_DB_URL) throw new Error("SUPABASE_DB_URL is required.");
 const preview = process.argv.includes("--preview-migration");
-const sql = postgres(process.env.SUPABASE_DB_URL, { max: 1, ssl: "require", connect_timeout: 10 });
+const sql = postgres(process.env.SUPABASE_DB_URL, { ...testDatabaseOptions(), connect_timeout: 10 });
 const rollback = new Error("rollback security migration and fixtures");
 const orgIds = [randomUUID(), randomUUID()];
 let passed = false;
@@ -33,6 +34,7 @@ try {
   const before = await sql.begin("read only", catalog);
   try {
     await sql.begin(async (tx) => {
+      await tx.unsafe("set local time zone 'Asia/Kolkata'");
       await tx.unsafe("set local lock_timeout = '5s'");
       await tx.unsafe("set local statement_timeout = '30s'");
       if (preview) {

@@ -8,7 +8,7 @@
 
 **Product maturity before this review: 5.5/10 against the proposed MNC CA platform.** Substantial attendance and CRM workflows existed, but serious access-control and attendance integrity defects remained, and AI was limited to support-reply drafting. Passing frontend tests did not prove those database rules.
 
-The delivered changes strengthen the foundation and add a supervised CA AI workbench. They do not establish autonomous taxation/legal execution or MNC-scale capacity. Rate maturity again after live provider evaluation, authenticated end-to-end acceptance, restore and concurrency/load testing; an unmeasured higher score would be misleading.
+The delivered changes strengthen the foundation and add a supervised CA AI workbench. The [second quality pass](quality-upgrade.md) adds retained document versions, interrupted-upload recovery, scoped team attendance, derived history, written rejection reasons and dated reminders. Actual concurrent leave/month-close tests and authenticated HTTP/Storage acceptance now pass. This does not establish autonomous taxation/legal execution or MNC-scale capacity. Live provider evaluation, realistic load testing and restore drills remain required before any perfect-score claim.
 
 | Area | Assessment | Decision |
 | --- | --- | --- |
@@ -79,11 +79,11 @@ Workflow: **draft -> running -> needs review -> approved / rejected**. Failed ge
 | --- | --- |
 | Provider activation | Configure Groq/Gmail/WhatsApp and SMTP, exercise supervised live connections, evaluate specialist answers against firm-approved cases |
 | Legal/tax execution | Define jurisdiction-specific forms, rule sources, professional sign-off and authorized government/accounting connections; retain filing acknowledgements |
-| Document intelligence | Track retained versions and upload quotas/cleanup; add extraction/OCR, malware checks and reviewed extracted facts before using file contents |
+| Document intelligence | Versions, quotas and recoverable uploads now work; add extraction/OCR, malware checks and reviewed extracted facts before using file contents |
 | Reliable channels | Verified inbound intake, sender matching, delivery callbacks, durable dispatch attempts, provider reconciliation and replay/pause controls |
-| Compliance recurrence | Versioned deadline catalogue, recurring obligations, dated reminder occurrences and escalation rules |
+| Compliance recurrence | Dated reminders now work; add versioned statutory catalogue, recurring obligations and escalation rules |
 | Finance | Numbered invoice line items/tax fields, generated invoices, reversals and trusted bank reconciliation |
-| Advanced attendance | Dated policy assignments, derived history during delayed reconciliation, team register, annual allocation UI and full concurrent month-close acceptance |
+| Advanced attendance | Derived history, filtered scoped team register and concurrent month-close acceptance now work; add dated policy assignments, annual allocation UI, accrual and payroll |
 | Enterprise administration | Agreed company/subsidiary model, SSO/MFA configuration, retention, restore drills, deployment monitoring and measured capacity/cost targets |
 
 These are tracked implementation requirements, not working features disguised as settings. The competitor's announcement supplies categories but does not establish a verified feature specification or performance baseline.
@@ -92,7 +92,7 @@ These are tracked implementation requirements, not working features disguised as
 
 Application checks include lint, TypeScript, rendered interaction/domain/provider tests and production build. Database scripts use generated fixtures with transaction rollback and exercise actual privileges, RLS and business functions. The new future-correction test failed against the previous implementation and passed after the integrity migration. No real employee attendance or client messages are used as test fixtures.
 
-Provider tests validate request construction and output contracts with mocked responses; they are not evidence of live model quality or delivery. Fresh-project migration replay, full browser acceptance, provider activation and statistically meaningful load/restore tests remain explicit release work.
+Provider tests validate request construction and output contracts with mocked responses; they are not evidence of live model quality or delivery. CI now includes isolated fresh-database migration replay and database workflow checks. Full interactive browser acceptance, provider activation and statistically meaningful load/restore tests remain explicit release work.
 
 ## Industry references used
 

@@ -1,11 +1,13 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import postgres from "postgres";
+import { testDatabaseOptions } from "./test-database-options.mjs";
 
-const sql = postgres(process.env.SUPABASE_DB_URL, { max: 1, ssl: "require" });
+const sql = postgres(process.env.SUPABASE_DB_URL, testDatabaseOptions());
 const rollback = new Error("rollback fixtures");
 try {
   await sql.begin(async (tx) => {
+    await tx.unsafe("set local time zone 'Asia/Kolkata'");
     const userA = randomUUID();
     const userB = randomUUID();
     const [org] = await tx`insert into public.organizations(name) values('Workspace test') returning id`;

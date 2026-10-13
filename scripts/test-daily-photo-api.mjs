@@ -12,6 +12,7 @@ const member = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NE
   auth: { persistSession: false, autoRefreshToken: false },
 });
 let userId, orgId, path;
+const documentPaths = [];
 const marker = `Photo API fixture ${randomUUID()}`;
 try {
   const email = `photo-${randomUUID()}@example.invalid`,
@@ -76,6 +77,75 @@ try {
       contentType: "image/png",
     });
   assert.ok(forged.error, "unreserved upload denied");
+  if (process.env.PHOTO_VERIFY_QUALITY === "1") {
+    const [document] =
+      await sql`insert into public.crm_documents(organization_id,title,owner_id) values(${orgId},'Generated version test',${employee.id}) returning id`;
+    for (const filename of ["first.png", "second.png"]) {
+      const reservation = await member.rpc("crm_reserve_document", {
+        p_id: randomUUID(),
+        p_document: document.id,
+        p_filename: filename,
+        p_type: "image/png",
+        p_size: image.length,
+      });
+      assert.ok(!reservation.error, "document upload reservation");
+      documentPaths.push(reservation.data.path);
+      const uploaded = await member.storage
+        .from("crm-documents")
+        .upload(reservation.data.path, new Blob([image], { type: "image/png" }), { contentType: "image/png" });
+      assert.ok(!uploaded.error, "real document Storage upload");
+      assert.ok(
+        !(await member.rpc("crm_finish_document", { p_id: reservation.data.id })).error,
+        "document metadata finalization",
+      );
+    }
+    assert.ok(
+      !(await member.storage.from("crm-documents").download(documentPaths[0])).error,
+      "earlier version stays downloadable",
+    );
+    await member.storage.from("crm-documents").remove([documentPaths[0]]);
+    assert.ok(
+      !(await member.storage.from("crm-documents").download(documentPaths[0])).error,
+      "ready version cannot be directly deleted",
+    );
+    const unfinishedId = randomUUID();
+    const unfinished = await member.rpc("crm_reserve_document", {
+      p_id: unfinishedId,
+      p_document: document.id,
+      p_filename: "unfinished.png",
+      p_type: "image/png",
+      p_size: image.length,
+    });
+    assert.ok(!unfinished.error, "unfinished reservation");
+    documentPaths.push(unfinished.data.path);
+    assert.ok(
+      !(
+        await member.storage
+          .from("crm-documents")
+          .upload(unfinished.data.path, new Blob([image], { type: "image/png" }), { contentType: "image/png" })
+      ).error,
+      "unfinished file upload",
+    );
+    assert.ok(
+      !(await member.rpc("crm_discard_document", { p_id: unfinishedId, p_complete: false })).error,
+      "discard intent",
+    );
+    assert.ok(
+      (await member.rpc("crm_finish_document", { p_id: unfinishedId })).error,
+      "discarded version cannot finalize",
+    );
+    assert.ok(
+      !(await member.storage.from("crm-documents").remove([unfinished.data.path])).error,
+      "discard removes physical upload",
+    );
+    assert.ok(
+      !(await member.rpc("crm_discard_document", { p_id: unfinishedId, p_complete: true })).error,
+      "discard releases reservation",
+    );
+    console.log(
+      "Passed real document Storage API: retained versions, metadata finalization, ready-file delete denial and unfinished-file discard.",
+    );
+  }
   if (process.env.PHOTO_PORTAL_URL) {
     const base = process.env.PHOTO_PORTAL_URL;
     assert.ok(
@@ -131,11 +201,35 @@ try {
       assert.ok(exported.headers.get("cache-control")?.includes("no-store"), "private workpaper export is not cached");
       console.log("Passed authenticated AI workbench and scoped workpaper export; no provider call made.");
     }
+    if (process.env.PHOTO_VERIFY_QUALITY === "1") {
+      const documents = await fetch(`${base}/crm/documents`, { headers: { Cookie: cookie } });
+      assert.ok((await documents.text()).includes("Upload a new version"), "versioned document interface rendered");
+      await sql`update public.profiles set role='admin' where user_id=${userId}`;
+      const register = await fetch(`${base}/team-attendance`, { headers: { Cookie: cookie } });
+      const registerHtml = await register.text();
+      assert.equal(register.status, 200, "team attendance page");
+      assert.ok(
+        registerHtml.includes("Photo fixture") && registerHtml.includes("Apply filters"),
+        "scoped daily register renders fixture",
+      );
+      const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(new Date());
+      const exported = await fetch(`${base}/team-attendance/export?date=${today}`, { headers: { Cookie: cookie } });
+      assert.equal(exported.status, 200, "filtered register export");
+      assert.ok((await exported.text()).includes("FIXTURE"), "register export matches fixture");
+      console.log("Passed authenticated document-version and team attendance interfaces and register export.");
+    }
   }
   console.log(
     "Passed real private photo API: generated PNG upload, metadata verification, authenticated download, signed preview, unreserved upload denied.",
   );
 } finally {
+  if (documentPaths.length) {
+    const deleted = await admin.storage.from("crm-documents").remove(documentPaths);
+    if (deleted.error) {
+      console.error("Generated document fixture cleanup failed.");
+      process.exitCode = 1;
+    }
+  }
   if (path) {
     const removed = await admin.storage.from("attendance-photos").remove([path]);
     if (removed.error) {
@@ -148,6 +242,8 @@ try {
       await tx`delete from public.audit_logs where organization_id=${orgId}`;
       await tx`delete from public.ca_agent_jobs where organization_id=${orgId}`;
       await tx`delete from public.ca_knowledge where organization_id=${orgId}`;
+      await tx`delete from public.crm_document_versions where organization_id=${orgId}`;
+      await tx`delete from public.crm_documents where organization_id=${orgId}`;
       await tx`delete from public.daily_report_photos where organization_id=${orgId}`;
       await tx`delete from public.daily_work_reports where organization_id=${orgId}`;
       await tx`delete from public.attendance_days where organization_id=${orgId}`;

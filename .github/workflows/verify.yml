@@ -24,3 +24,31 @@ jobs:
       - run: npm test
       - run: npm run build
       - run: npm audit --omit=dev --audit-level=high
+  database:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SUPABASE_DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+      TEST_DATABASE_LOCAL: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - uses: supabase/setup-cli@v3
+        with:
+          version: 2.120.0
+      - run: supabase init
+      - name: Replay all migrations on an isolated fresh database
+        run: supabase db start
+      - run: node scripts/test-security-db.mjs
+      - run: node scripts/test-attendance-integrity-db.mjs
+      - run: node scripts/test-crm-db.mjs
+      - run: node scripts/test-workspace-db.mjs
+      - run: node scripts/test-daily-report-db.mjs
+      - run: node scripts/test-quality-db.mjs
+      - run: node scripts/test-attendance-concurrency-db.mjs
+      - if: always()
+        run: supabase stop

@@ -11,7 +11,9 @@ export default async function AutomationsPage() {
   const [eventResult, outbox] = await Promise.all([
     client
       .from("crm_automation_events")
-      .select("id,title,status,source_module,notes,created_at")
+      .select("id,title,status,source_module,notes,created_at,occurrence_date", { count: "exact" })
+      .eq("organization_id", identity.organizationId)
+      .eq("status", "queued")
       .order("created_at", { ascending: false })
       .limit(100),
     admin
@@ -45,16 +47,17 @@ export default async function AutomationsPage() {
         </section>
       )}
       <section className="card section">
-        <h2>Reminder queue</h2>
+        <h2>Reminder queue · {eventResult.count ?? 0} pending</h2>
         <p className="stat-note">
-          Compliance reminders and overdue tasks are queued daily at 09:00 IST. Acknowledging does not send a message or
-          complete the underlying work.
+          Compliance reminders appear 7, 3 and 1 days before the recorded due date, on the due date and daily while
+          overdue. Task reminders appear from the day before they are due. The daily check runs at 09:00 IST.
+          Acknowledging does not send a message or complete work. Latest 100 pending reminders shown.
         </p>
         {(events ?? []).map((e) => (
           <article className="section" key={e.id}>
             <Link href={`/crm/${e.source_module}`}>{e.title}</Link>
             <p>
-              {e.notes} · {e.status}
+              {e.notes} · {e.status} · {e.occurrence_date}
             </p>
             {e.status === "queued" && (
               <form action={acknowledge}>

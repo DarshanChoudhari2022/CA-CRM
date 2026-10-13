@@ -19,6 +19,11 @@ try {
     "20261013101000_attendance_integrity",
     "20261013102000_ai_context_validation",
     "20261013103000_ai_workpaper_scope",
+    "20261013120000_document_versions",
+    "20261013121000_attendance_register",
+    "20261013122000_dated_reminders",
+    "20261013123000_reminder_refresh",
+    "20261013124000_local_leave_year",
   ]) {
     const version = name.split("_")[0];
     const source = await readFile(new URL(`../supabase/migrations/${name}.sql`, import.meta.url), "utf8");

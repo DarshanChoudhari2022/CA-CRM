@@ -32,7 +32,11 @@ export function workspaceNavigation(workspace: Workspace, role: PortalIdentity["
     { href: "/leave", label: "Leave", icon: "leave" },
     { href: "/work", label: "Daily work", icon: "work" },
   ];
-  if (role !== "employee") links.push({ href: "/approvals", label: "Approvals", icon: "approvals" });
+  if (role !== "employee")
+    links.push(
+      { href: "/team-attendance", label: "Team attendance", icon: "attendance" },
+      { href: "/approvals", label: "Approvals", icon: "approvals" },
+    );
   if (["admin", "partner"].includes(role))
     links.push(
       { href: "/employees", label: "Employees", icon: "employees" },
