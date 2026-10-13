@@ -49,6 +49,7 @@ jobs:
       - run: node scripts/test-workspace-db.mjs
       - run: node scripts/test-daily-report-db.mjs
       - run: node scripts/test-quality-db.mjs
+      - run: node scripts/test-leave-reporting-db.mjs
       - run: node scripts/test-attendance-concurrency-db.mjs
       - if: always()
         run: supabase stop

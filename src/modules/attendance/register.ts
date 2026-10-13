@@ -8,6 +8,8 @@ export const registerResults = [
   "short_day",
   "absent",
   "excused",
+  "leave_approved",
+  "half_day_leave_approved",
   "not_applicable",
 ] as const;
 export const registerFilters = z.object({

@@ -2,12 +2,16 @@ import { CalendarCheck2, ClipboardCheck, Clock3, UsersRound } from "lucide-react
 import { PageHead } from "@/components/page-head";
 import { StatusPill } from "@/components/status-pill";
 import type { DailyReportData } from "@/modules/attendance/daily-report";
+import { requireIdentity } from "@/modules/identity/session";
 import { type DashboardSnapshot, rpc } from "@/modules/portal/queries";
 import { PunchButton } from "../attendance/punch-button";
 import { ShiftDuration } from "../attendance/shift-duration";
+import { AdminOverview } from "./admin-overview";
 import { DailyReportCard } from "./daily-report-card";
 
 export default async function DashboardPage() {
+  const identity = await requireIdentity();
+  if (["admin", "partner"].includes(identity.role)) return <AdminOverview />;
   const [snapshot, report] = await Promise.all([
     rpc<DashboardSnapshot>("dashboard_snapshot_v2"),
     rpc<DailyReportData>("my_daily_report").catch(() => null),
@@ -64,7 +68,11 @@ export default async function DashboardPage() {
           />
         </div>
         <div className="today-action">
-          <PunchButton canCheckIn={snapshot.today.canCheckIn} canCheckOut={snapshot.today.canCheckOut} />
+          {snapshot.today.state === "leave_approved" ? (
+            <StatusPill value="leave_approved" />
+          ) : (
+            <PunchButton canCheckIn={snapshot.today.canCheckIn} canCheckOut={snapshot.today.canCheckOut} />
+          )}
         </div>
       </section>
       {report ? (

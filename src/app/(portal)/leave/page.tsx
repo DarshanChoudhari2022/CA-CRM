@@ -1,5 +1,7 @@
+import { redirect } from "next/navigation";
 import { PageHead } from "@/components/page-head";
 import { StatusPill } from "@/components/status-pill";
+import { requireIdentity } from "@/modules/identity/session";
 import { rpc } from "@/modules/portal/queries";
 import { CancelRequest } from "../operations/forms";
 import { LeaveForm } from "./leave-form";
@@ -10,6 +12,8 @@ type LeaveData = {
 };
 
 export default async function LeavePage() {
+  const identity = await requireIdentity();
+  if (["admin", "partner"].includes(identity.role)) redirect("/approvals");
   const data = await rpc<LeaveData>("my_leave_snapshot");
   return (
     <>

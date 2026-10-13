@@ -26,12 +26,13 @@ export function workspaceNavigation(workspace: Workspace, role: PortalIdentity["
         ? [{ href: "/crm/automations", label: "Automations", icon: "settings" as const }]
         : []),
     ];
-  const links: NavItem[] = [
-    { href: "/dashboard", label: "Overview", icon: "overview" },
-    { href: "/attendance", label: "My attendance", icon: "attendance" },
-    { href: "/leave", label: "Leave", icon: "leave" },
-    { href: "/work", label: "Daily work", icon: "work" },
-  ];
+  const links: NavItem[] = [{ href: "/dashboard", label: "Overview", icon: "overview" }];
+  if (!["admin", "partner"].includes(role))
+    links.push(
+      { href: "/attendance", label: "My attendance", icon: "attendance" },
+      { href: "/leave", label: "Leave", icon: "leave" },
+      { href: "/work", label: "Daily work", icon: "work" },
+    );
   if (role !== "employee")
     links.push(
       { href: "/team-attendance", label: "Team attendance", icon: "attendance" },

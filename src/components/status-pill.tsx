@@ -2,6 +2,8 @@ export function StatusPill({ value }: { value: string }) {
   const state = value.toLowerCase().replaceAll(" ", "_");
   const tone = [
     "approved",
+    "leave_approved",
+    "half_day_leave_approved",
     "present",
     "full_day",
     "complete",

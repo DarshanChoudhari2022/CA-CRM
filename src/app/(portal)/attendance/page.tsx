@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { PageHead } from "@/components/page-head";
 import { StatusPill } from "@/components/status-pill";
 import { createClient } from "@/lib/supabase/server";
@@ -21,6 +22,7 @@ type Day = {
 
 export default async function AttendancePage({ searchParams }: { searchParams: Promise<{ month?: string }> }) {
   const identity = await requireIdentity();
+  if (["admin", "partner"].includes(identity.role)) redirect("/team-attendance");
   const timezone = await reportTimezone(identity);
   const filters = await searchParams;
   const month = /^\d{4}-(0[1-9]|1[0-2])$/.test(filters.month ?? "")

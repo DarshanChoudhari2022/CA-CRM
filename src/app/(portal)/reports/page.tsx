@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { PageHead } from "@/components/page-head";
 import { requireIdentity } from "@/modules/identity/session";
 import { loadReport, reportTimezone } from "./data";
+import { EmployeeTotals } from "./employee-totals";
 import { MonthActions } from "./month-actions";
 import { localMonth, monthSchema, parseVersion, previousMonth, ReportReadError } from "./report";
 
@@ -23,10 +24,10 @@ export default async function ReportsPage({
   try {
     timezone = await reportTimezone(identity);
     currentMonth = localMonth(new Date(), timezone);
-    if (filters.month === undefined) month = previousMonth(new Date(), timezone);
+    if (filters.month === undefined) month = currentMonth;
     if (!monthSchema.safeParse(month).success) throw new ReportReadError("Choose a valid month (YYYY-MM).", 400);
     selectedVersion = parseVersion(filters.version);
-    result = await loadReport(identity, month, selectedVersion);
+    result = await loadReport(identity, month, selectedVersion, false, true);
   } catch (failure) {
     error =
       failure instanceof ReportReadError
@@ -37,12 +38,15 @@ export default async function ReportsPage({
   if (result?.version != null) exportQuery.set("version", String(result.version));
   const metrics = result
     ? [
-        ["Expected days", result.report.expectedDays],
+        ["Working employee-days", result.report.expectedDays],
         ["Full days", result.report.fullDays],
         ["Half days", result.report.halfDays],
         ["Short days", result.report.shortDays],
         ["Absent", result.report.absentDays],
-        ["Approved leave", result.report.leaveDays],
+        ["Leave taken (days)", result.report.leaveDays],
+        ...(result.report.approvedLeaveDays === undefined
+          ? []
+          : [["Approved leave incl. future", result.report.approvedLeaveDays]]),
         ["Incomplete", result.report.incompleteDays],
         ["Total hours", result.report.totalHours],
       ]
@@ -58,6 +62,7 @@ export default async function ReportsPage({
         <label htmlFor="report-month">Month</label>
         <input
           id="report-month"
+          key={month}
           name="month"
           type="month"
           required
@@ -66,13 +71,15 @@ export default async function ReportsPage({
         <button className="button button-secondary" type="submit">
           View month
         </button>
+        <Link href={`/reports?month=${currentMonth}`}>This month</Link>
+        {timezone && <Link href={`/reports?month=${previousMonth(new Date(), timezone)}`}>Previous month</Link>}
       </form>
       {error && (
         <section className="card section">
           <p className="form-error" role="alert">
             {error}
           </p>
-          <Link href="/reports">Return to previous month</Link>
+          <Link href="/reports">Return to this month</Link>
         </section>
       )}
       {result && (
@@ -83,7 +90,7 @@ export default async function ReportsPage({
             </h2>
             <p>
               {result.version == null
-                ? "Live report — values may change."
+                ? "Live month-to-date report — calculated through today, not from future attendance. Administrators are excluded."
                 : `Saved report version ${result.version} · Generated ${result.generatedAt}`}
             </p>
             <p className="stat-note">Timezone: {timezone}</p>
@@ -112,6 +119,7 @@ export default async function ReportsPage({
               </form>
             )}
           </section>
+          <EmployeeTotals rows={result.employees} snapshot={result.version !== null} />
           <section className="grid grid-4">
             {metrics.map(([label, value]) => (
               <article className="card" key={label}>

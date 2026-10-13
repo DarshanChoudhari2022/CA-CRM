@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import type { PortalIdentity } from "@/modules/identity/session";
+import type { EmployeeTotal } from "./employee-totals";
 import { ReportReadError, summarySchema } from "./report";
+import { snapshotEmployeeTotals } from "./snapshot-totals";
 
 export async function reportTimezone(identity: PortalIdentity) {
   const { data, error } = await (await createClient())
@@ -17,6 +19,7 @@ export async function loadReport(
   month: string,
   version: number | null,
   includeDetail = false,
+  includeEmployeeTotals = false,
 ) {
   if (!["admin", "partner"].includes(identity.role))
     throw new ReportReadError("Administrator access is required.", 403);
@@ -43,7 +46,9 @@ export async function loadReport(
   if (selected != null) {
     const { data, error } = await client
       .from("attendance_report_snapshots")
-      .select(includeDetail ? "version,generated_at,summary,detail" : "version,generated_at,summary")
+      .select(
+        includeDetail || includeEmployeeTotals ? "version,generated_at,summary,detail" : "version,generated_at,summary",
+      )
       .eq("organization_id", identity.organizationId)
       .eq("month_start", `${month}-01`)
       .eq("version", selected)
@@ -61,6 +66,7 @@ export async function loadReport(
       version: snapshot.version,
       generatedAt: snapshot.generated_at,
       rows: snapshot.detail,
+      employees: includeEmployeeTotals ? snapshotEmployeeTotals(snapshot.detail) : [],
     };
   }
   let rows: unknown;
@@ -69,5 +75,19 @@ export async function loadReport(
     if (result.error) throw new ReportReadError("Live export unavailable. Refresh or contact your administrator.");
     rows = result.data;
   }
-  return { live, report: live, history, version: null, generatedAt: new Date().toISOString(), rows };
+  let employees: EmployeeTotal[] = [];
+  if (includeEmployeeTotals) {
+    const totals = await client.rpc("attendance_month_employee_totals", { p_month: month });
+    if (totals.error) throw new ReportReadError("Employee monthly totals unavailable. Refresh and retry.");
+    employees = totals.data as EmployeeTotal[];
+  }
+  return {
+    live,
+    report: live,
+    history,
+    version: null,
+    generatedAt: new Date().toISOString(),
+    rows,
+    employees,
+  };
 }

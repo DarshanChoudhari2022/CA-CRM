@@ -31,5 +31,7 @@ export async function decide(kind: "leave" | "attendance", id: string, decision:
   revalidatePath("/dashboard");
   revalidatePath("/leave");
   revalidatePath("/attendance");
+  revalidatePath("/reports");
+  revalidatePath("/team-attendance");
   return { success: `${kind === "leave" ? "Leave" : "Correction"} ${decision}.` };
 }

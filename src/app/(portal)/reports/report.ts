@@ -17,6 +17,7 @@ export const summarySchema = z.object({
   shortDays: z.number(),
   absentDays: z.number(),
   leaveDays: z.number(),
+  approvedLeaveDays: z.number().optional(),
   incompleteDays: z.number(),
   totalHours: z.string(),
   isClosed: z.boolean(),
@@ -61,6 +62,7 @@ const rowSchema = z.object({
   result: z.string().nullable(),
   late: z.boolean(),
   earlyDeparture: z.boolean(),
+  leaveDays: z.number().optional(),
 });
 export function attendanceCsv(
   rows: unknown,
@@ -83,6 +85,7 @@ export function attendanceCsv(
     "Result",
     "Late",
     "Early departure",
+    "Approved leave days",
     "Report month",
     "Timezone",
     "Generated at (UTC)",
@@ -106,6 +109,7 @@ export function attendanceCsv(
           r.result,
           r.late,
           r.earlyDeparture,
+          r.leaveDays,
           metadata.month,
           metadata.timezone,
           metadata.generatedAt,

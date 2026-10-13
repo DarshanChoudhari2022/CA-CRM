@@ -24,6 +24,7 @@ try {
     "20261013122000_dated_reminders",
     "20261013123000_reminder_refresh",
     "20261013124000_local_leave_year",
+    "20261013130000_leave_reporting",
   ]) {
     const version = name.split("_")[0];
     const source = await readFile(new URL(`../supabase/migrations/${name}.sql`, import.meta.url), "utf8");

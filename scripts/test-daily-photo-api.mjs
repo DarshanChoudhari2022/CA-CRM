@@ -210,12 +210,33 @@ try {
       assert.equal(register.status, 200, "team attendance page");
       assert.ok(
         registerHtml.includes("Photo fixture") && registerHtml.includes("Apply filters"),
-        "scoped daily register renders fixture",
+        "scoped daily register renders administration controls",
       );
       const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(new Date());
       const exported = await fetch(`${base}/team-attendance/export?date=${today}`, { headers: { Cookie: cookie } });
       assert.equal(exported.status, 200, "filtered register export");
-      assert.ok((await exported.text()).includes("FIXTURE"), "register export matches fixture");
+      assert.ok(
+        !(await exported.text()).includes("FIXTURE"),
+        "administrator is excluded from employee attendance export",
+      );
+      const adminDashboard = await fetch(`${base}/dashboard`, { headers: { Cookie: cookie } });
+      const adminHtml = await adminDashboard.text();
+      assert.equal(adminDashboard.status, 200);
+      assert.ok(
+        adminHtml.includes("Attendance management") && !adminHtml.includes("My attendance today"),
+        "admin dashboard has no personal attendance block",
+      );
+      const approvals = await fetch(`${base}/approvals`, { headers: { Cookie: cookie } });
+      assert.equal(approvals.status, 200);
+      assert.ok((await approvals.text()).includes("Leave approval history"));
+      const monthly = await fetch(`${base}/reports`, { headers: { Cookie: cookie } });
+      const monthlyHtml = await monthly.text();
+      assert.equal(monthly.status, 200);
+      assert.ok(
+        monthlyHtml.replaceAll(/<!--.*?-->/g, "").includes(`${today.slice(0, 7)} · Open`) &&
+          monthlyHtml.includes("Employee monthly calculation"),
+        "monthly report defaults to current month and exposes employee totals",
+      );
       console.log("Passed authenticated document-version and team attendance interfaces and register export.");
     }
   }

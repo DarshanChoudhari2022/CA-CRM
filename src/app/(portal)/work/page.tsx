@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { PageHead } from "@/components/page-head";
 import { createClient } from "@/lib/supabase/server";
 import { requireIdentity } from "@/modules/identity/session";
@@ -5,6 +6,7 @@ import { WorkForm, type WorkItem } from "./work-form";
 
 export default async function WorkPage() {
   const identity = await requireIdentity();
+  if (["admin", "partner"].includes(identity.role)) redirect("/dashboard");
   const supabase = await createClient();
   const today = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Kolkata",
