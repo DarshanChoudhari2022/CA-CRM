@@ -101,8 +101,22 @@ describe("workspace shell mobile interactions", () => {
     await act(async () => button?.click());
     expect(menu?.hidden).toBe(false);
     expect(button?.getAttribute("aria-expanded")).toBe("true");
+    expect(container.querySelector(".mobile-nav-backdrop")).not.toBeNull();
     await act(async () => button?.click());
     expect(menu?.hidden).toBe(true);
+  });
+  it("closes the drawer from the backdrop and Escape", async () => {
+    await render();
+    await act(async () =>
+      container.querySelector<HTMLButtonElement>('[aria-controls="mobile-workspace-menu"]')?.click(),
+    );
+    await act(async () => container.querySelector<HTMLButtonElement>(".mobile-nav-backdrop")?.click());
+    expect(container.querySelector<HTMLElement>("#mobile-workspace-menu")?.hidden).toBe(true);
+    await act(async () =>
+      container.querySelector<HTMLButtonElement>('[aria-controls="mobile-workspace-menu"]')?.click(),
+    );
+    await act(async () => document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" })));
+    expect(container.querySelector<HTMLElement>("#mobile-workspace-menu")?.hidden).toBe(true);
   });
   it("closes the mobile menu when a route is selected", async () => {
     await render();

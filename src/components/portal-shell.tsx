@@ -16,6 +16,7 @@ export function PortalShell({ children, identity }: { children: React.ReactNode;
   const links = workspaceNavigation(workspace, identity.role);
   const [menuOpen, setMenuOpen] = useState(false);
   const [approvalCount, setApprovalCount] = useState(0);
+  const closeMenu = () => setMenuOpen(false);
   useEffect(() => {
     if (workspace !== "attendance" || identity.role === "employee") return;
     let cancelled = false;
@@ -45,6 +46,18 @@ export function PortalShell({ children, identity }: { children: React.ReactNode;
       document.removeEventListener("visibilitychange", refresh);
     };
   }, [workspace, identity.role]);
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMenuOpen(false);
+    };
+    document.addEventListener("keydown", onKeyDown);
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = "";
+    };
+  }, [menuOpen]);
   const name = workspace === "crm" ? "CA CRM" : workspace === "attendance" ? "Attendance" : "Workspaces";
   const navigation = links.map(({ href, label, icon }) => {
     const Icon = navIcons[icon];
@@ -91,7 +104,7 @@ export function PortalShell({ children, identity }: { children: React.ReactNode;
               aria-label={menuOpen ? "Close menu" : "Open menu"}
               aria-expanded={menuOpen}
               aria-controls="mobile-workspace-menu"
-              onClick={() => setMenuOpen(!menuOpen)}
+              onClick={() => setMenuOpen((open) => !open)}
               type="button"
             >
               {menuOpen ? <X size={20} /> : <Menu size={20} />}
@@ -116,16 +129,48 @@ export function PortalShell({ children, identity }: { children: React.ReactNode;
             </form>
           </div>
         </header>
+        {menuOpen && (
+          <button
+            className="mobile-nav-backdrop"
+            type="button"
+            aria-label="Close navigation menu"
+            onClick={closeMenu}
+          />
+        )}
         <nav
           id="mobile-workspace-menu"
           className={`mobile-nav ${menuOpen ? "is-open" : ""}`}
           aria-label={`${name} mobile navigation`}
           hidden={!menuOpen}
         >
-          {navigation}
-          <Link href="/change-password" onNavigate={() => setMenuOpen(false)}>
-            Change password
-          </Link>
+          <div className="mobile-nav-head">
+            <div>
+              <span className="mobile-nav-kicker">Workspace</span>
+              <strong>{name}</strong>
+            </div>
+            <button
+              className="icon-button mobile-nav-close"
+              type="button"
+              aria-label="Close navigation menu"
+              onClick={closeMenu}
+            >
+              <X size={19} />
+            </button>
+          </div>
+          <div className="mobile-nav-links">
+            {navigation}
+            <Link href="/change-password" onNavigate={closeMenu}>
+              <span className="mobile-nav-link-icon">↗</span>
+              Change password
+            </Link>
+          </div>
+          <div className="mobile-nav-user">
+            <span className="mobile-nav-avatar">{identity.fullName.slice(0, 1).toUpperCase()}</span>
+            <span>
+              <strong>{identity.fullName}</strong>
+              <small>{identity.role}</small>
+            </span>
+          </div>
         </nav>
         <main className="content">{children}</main>
       </div>
