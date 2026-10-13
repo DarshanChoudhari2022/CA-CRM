@@ -797,6 +797,63 @@ input[type="checkbox"] {
   column-gap: 24px;
   row-gap: 8px;
 }
+
+.report-month-toolbar {
+  align-items: center;
+  gap: 12px 20px;
+}
+.report-month-controls,
+.report-month-shortcuts {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.report-month-toolbar .report-month-controls > label {
+  margin: 0;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 600;
+}
+.report-month-controls > input,
+.report-month-controls > .button {
+  height: 44px;
+  min-height: 44px;
+}
+.report-month-controls > input {
+  width: 180px;
+  min-width: 0;
+}
+.report-month-shortcuts a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  color: var(--blue);
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.report-month-shortcuts a:hover {
+  background: #e8f1fb;
+}
+@media (max-width: 720px) {
+  .report-month-controls {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    width: 100%;
+  }
+  .report-month-controls > label {
+    grid-column: 1 / -1;
+  }
+  .report-month-controls > input {
+    width: 100%;
+  }
+  .report-month-shortcuts {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+}
 .daily-report-card > .section-title,
 .daily-report-card > p,
 .daily-report-card > .daily-photo-grid {

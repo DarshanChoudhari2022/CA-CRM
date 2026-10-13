@@ -58,21 +58,25 @@ export default async function ReportsPage({
         title="Monthly attendance"
         description="Review a month, export a saved report, or reopen it for corrections."
       />
-      <form className="filters" action="/reports">
-        <label htmlFor="report-month">Month</label>
-        <input
-          id="report-month"
-          key={month}
-          name="month"
-          type="month"
-          required
-          defaultValue={monthSchema.safeParse(month).success ? month : undefined}
-        />
-        <button className="button button-secondary" type="submit">
-          View month
-        </button>
-        <Link href={`/reports?month=${currentMonth}`}>This month</Link>
-        {timezone && <Link href={`/reports?month=${previousMonth(new Date(), timezone)}`}>Previous month</Link>}
+      <form className="filters report-month-toolbar" action="/reports">
+        <div className="report-month-controls">
+          <label htmlFor="report-month">Month</label>
+          <input
+            id="report-month"
+            key={month}
+            name="month"
+            type="month"
+            required
+            defaultValue={monthSchema.safeParse(month).success ? month : undefined}
+          />
+          <button className="button button-secondary" type="submit">
+            View month
+          </button>
+        </div>
+        <nav className="report-month-shortcuts" aria-label="Quick month selection">
+          <Link href={`/reports?month=${currentMonth}`}>This month</Link>
+          {timezone && <Link href={`/reports?month=${previousMonth(new Date(), timezone)}`}>Previous month</Link>}
+        </nav>
       </form>
       {error && (
         <section className="card section">
