@@ -1,23 +1,36 @@
+import { ArrowUpRight } from "lucide-react";
 import Link from "next/link";
+import { Suspense } from "react";
 import { PageHead } from "@/components/page-head";
-import { crmModules } from "@/modules/crm/config";
+import { createClient } from "@/lib/supabase/server";
+import { loadCrmOverview } from "@/modules/crm/overview";
+import { requireIdentity } from "@/modules/identity/session";
+import PortalLoading from "../loading";
+import { CrmOverviewView } from "./overview";
+import "./overview.css";
+
+async function OverviewData() {
+  const identity = await requireIdentity();
+  const client = await createClient();
+  const data = await loadCrmOverview(client, identity.organizationId);
+  return <CrmOverviewView data={data} admin={["admin", "partner"].includes(identity.role)} />;
+}
 export default function CrmHome() {
   return (
     <>
-      <PageHead eyebrow="CA CRM" title="Firm workspace" description="Your client records and assigned work." />
-      <section className="grid grid-3 workspace-cards">
-        <Link className="card workspace-card" href="/crm/ai-team">
-          <h2>CA AI team</h2>
-          <p>Tax, compliance, legal, document and finance workpapers.</p>
-          <span>Open workbench →</span>
-        </Link>
-        {Object.entries(crmModules).map(([key, module]) => (
-          <Link className="card workspace-card" href={`/crm/${key}`} key={key}>
-            <h2>{module.title}</h2>
-            <span>Open module →</span>
+      <PageHead
+        eyebrow="FIRM OVERVIEW"
+        title="Your firm, at a glance."
+        description="A clear view of clients, commitments and the work ahead."
+        action={
+          <Link href="/crm/reports" className="button button-secondary">
+            View reports <ArrowUpRight size={16} aria-hidden="true" />
           </Link>
-        ))}
-      </section>
+        }
+      />
+      <Suspense fallback={<PortalLoading />}>
+        <OverviewData />
+      </Suspense>
     </>
   );
 }
