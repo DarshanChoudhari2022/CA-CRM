@@ -7,7 +7,7 @@ import type { DocumentVersion } from "@/modules/crm/documents";
 import { requireIdentity } from "@/modules/identity/session";
 import { SupportTools } from "../support-tools";
 import { DocumentUpload } from "./document-upload";
-import { ConvertButton, PaymentForm, RecordForm } from "./record-form";
+import { ConvertButton, PaymentForm, RecordEditor } from "./record-form";
 
 export default async function CrmPage({
   params,
@@ -40,6 +40,7 @@ export default async function CrmPage({
     client.from("employees").select("id,full_name").eq("active", true),
   ]);
   if (records.error) throw new Error(records.error.message);
+  if (clients.error || employees.error) throw new Error("Record assignments unavailable. Please try again.");
   const items = (records.data ?? []) as CrmRecord[];
   const options = (clients.data ?? []) as CrmOption[];
   const people = (employees.data ?? []).map((e) => ({ id: e.id, title: e.full_name }));
@@ -60,6 +61,15 @@ export default async function CrmPage({
     module === "invoices" ? await client.rpc("crm_invoice_receipts", { p_ids: items.map((i) => i.id) }) : null;
   if (payments?.error) throw new Error("Payment totals unavailable.");
   const receipts = (payments?.data ?? []) as Array<{ invoice_id: string; received: number }>;
+  const clientNames = new Map(options.map((item) => [item.id, item.title]));
+  const employeeNames = new Map(people.map((item) => [item.id, item.title]));
+  const receivedAmounts = new Map(receipts.map((item) => [item.invoice_id, item.received]));
+  const documentVersions = new Map<string, DocumentVersion[]>();
+  for (const version of (versions?.data ?? []) as DocumentVersion[]) {
+    const group = documentVersions.get(version.document_id) ?? [];
+    group.push(version);
+    documentVersions.set(version.document_id, group);
+  }
   return (
     <>
       <PageHead eyebrow="CA CRM" title={crmModules[module].title} description="Your firm's records and work." />
@@ -93,12 +103,7 @@ export default async function CrmPage({
         {page > 1 && <Link href={`?${search}&page=${page - 1}`}>Previous</Link>}
         {page * 50 < (records.count ?? 0) && <Link href={`?${search}&page=${page + 1}`}>Next</Link>}
       </div>
-      {admin && (
-        <details className="card section">
-          <summary>Add {module === "compliance" ? "compliance task" : "record"}</summary>
-          <RecordForm module={module} clients={options} employees={people} admin />
-        </details>
-      )}
+      {admin && <RecordEditor module={module} clients={options} employees={people} admin />}
       <section className="section grid grid-2">
         {items.map((item) => (
           <article className="card" key={item.id}>
@@ -110,21 +115,18 @@ export default async function CrmPage({
               </p>
             )}
             {item.notes && <p style={{ whiteSpace: "pre-wrap" }}>{item.notes}</p>}
-            <p>{options.find((c) => c.id === item.client_id)?.title ?? ""}</p>
+            <p>{clientNames.get(item.client_id ?? "") ?? ""}</p>
             <p className="stat-note">
-              {people.find((e) => e.id === item.owner_id)?.title ?? "Unassigned"}
+              {employeeNames.get(item.owner_id ?? "") ?? "Unassigned"}
               {item.due_date && ` · Due ${item.due_date}`}
             </p>
             {item.amount && (
               <p>
-                INR {item.amount} · Received INR {receipts.find((p) => p.invoice_id === item.id)?.received ?? 0}
+                INR {item.amount} · Received INR {receivedAmounts.get(item.id) ?? 0}
               </p>
             )}
             {(admin || !["clients", "leads", "invoices"].includes(module)) && (
-              <details>
-                <summary>Edit record</summary>
-                <RecordForm module={module} item={item} clients={options} employees={people} admin={admin} />
-              </details>
+              <RecordEditor module={module} item={item} clients={options} employees={people} admin={admin} />
             )}
             {module === "leads" && admin && !item.client_id && <ConvertButton id={item.id} />}
             {module === "support" && <SupportTools id={item.id} admin={admin} />}
@@ -133,9 +135,7 @@ export default async function CrmPage({
                 id={item.id}
                 userId={identity.userId}
                 admin={admin}
-                versions={((versions?.data as DocumentVersion[]) ?? []).filter(
-                  (version) => version.document_id === item.id,
-                )}
+                versions={documentVersions.get(item.id) ?? []}
                 storagePath={item.storage_path}
               />
             )}

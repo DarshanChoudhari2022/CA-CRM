@@ -1,7 +1,25 @@
 "use client";
-import { useActionState } from "react";
+import { type ComponentProps, useActionState, useState } from "react";
 import { type CrmModule, type CrmOption, type CrmRecord, crmModules } from "@/modules/crm/config";
 import { convertLead, recordPayment, saveRecord } from "./actions";
+
+export function RecordEditor(props: ComponentProps<typeof RecordForm>) {
+  const [visited, setVisited] = useState(false);
+  return (
+    <details
+      className={props.item ? undefined : "card section"}
+      onToggle={(event) => {
+        if (event.currentTarget.open) setVisited(true);
+      }}
+    >
+      <summary>
+        {props.item ? "Edit record" : props.module === "compliance" ? "Add compliance task" : "Add record"}
+      </summary>
+      {/* Mount on first open, then preserve unsaved input across close/reopen. */}
+      {visited && <RecordForm {...props} />}
+    </details>
+  );
+}
 
 export function RecordForm({
   module,

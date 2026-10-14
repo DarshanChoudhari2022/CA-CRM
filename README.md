@@ -53,6 +53,7 @@ Additional rollback-only checks: `scripts/test-security-db.mjs`, `scripts/test-a
 - [CRM implementation, integration variables and remaining phases](docs/crm-suite-delivery.md)
 - [Attendance/CRM separation, mobile styling and measured performance](docs/workspace-performance.md)
 - [Optional daily work/photos and shift totals](docs/daily-work-updates.md)
+- [CRM dashboard redesign, measured rendering improvement and stack verdict](docs/dashboard-performance-review.md)
 
 Brand assets under public/brand were copied from the existing PSB website. Secrets, .env files and employee exports are excluded from Git.
 

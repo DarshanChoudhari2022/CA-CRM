@@ -37,7 +37,17 @@ try {
   assert.ok(cookie, "Benchmark session missing");
   const budget = Number(process.env.PERF_MAX_MS ?? 1700);
   let pass = true;
-  for (const path of ["/crm/automations", "/attendance"]) {
+  const pages =
+    process.env.PERF_CRM_ONLY === "1"
+      ? [
+          ["/crm", "Your firm, at a glance."],
+          ["/crm/tasks", "Tasks"],
+        ]
+      : [
+          ["/crm/automations", "Automation operations"],
+          ["/attendance", "Attendance history"],
+        ];
+  for (const [path, heading] of pages) {
     const samples = [],
       firstBytes = [];
     for (let run = 0; run < 4; run++) {
@@ -47,10 +57,7 @@ try {
       const body = await response.text();
       assert.equal(response.status, 200, `Authenticated ${path}`);
       assert.ok(!body.includes("We could not sign you in"), "Unexpected auth failure");
-      assert.ok(
-        body.includes(path === "/attendance" ? "Attendance history" : "Automation operations"),
-        "Expected authenticated page content",
-      );
+      assert.ok(body.includes(heading), "Expected authenticated page content");
       if (process.env.PERF_ASSERT_ISOLATION === "1")
         assert.ok(
           body.includes(`data-workspace="${path === "/attendance" ? "attendance" : "crm"}"`),
