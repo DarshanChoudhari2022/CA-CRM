@@ -7,6 +7,21 @@ import { isAdministrator } from "@/modules/identity/access";
 import { requireIdentity } from "@/modules/identity/session";
 
 export type EmployeeState = { error?: string; success?: string };
+export async function updateEmployeeManager(_: EmployeeState, form: FormData): Promise<EmployeeState> {
+  if (!isAdministrator((await requireIdentity()).role)) return { error: "Administrator access required." };
+  const parsed = z
+    .object({ employee: z.uuid(), manager: z.union([z.uuid(), z.literal("")]) })
+    .safeParse(Object.fromEntries(form));
+  if (!parsed.success) return { error: "Choose a valid employee and reporting manager." };
+  const client = await createClient();
+  const { error } = await client.rpc("admin_employee_manager", {
+    p_employee: parsed.data.employee,
+    p_manager: parsed.data.manager || null,
+  });
+  if (error) return { error: error.message };
+  revalidatePath("/employees");
+  return { success: "Reporting manager updated." };
+}
 export async function addEmployee(_: EmployeeState, formData: FormData): Promise<EmployeeState> {
   if (!isAdministrator((await requireIdentity()).role)) return { error: "Administrator access required." };
   const supabase = await createClient();

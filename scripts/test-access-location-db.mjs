@@ -10,7 +10,11 @@ const rollback = new Error("rollback access/location verification");
 try {
   await db.begin(async (tx) => {
     await tx.unsafe("set local lock_timeout='5s'; set local statement_timeout='20s'");
-    for (const name of ["20261016100000_access_location_sessions", "20261016103000_leave_email_notifications"]) {
+    for (const name of [
+      "20261016100000_access_location_sessions",
+      "20261016103000_leave_email_notifications",
+      "20261016140000_employee_manager_controls",
+    ]) {
       const [installed] =
         await tx`select version from supabase_migrations.schema_migrations where version=${name.split("_")[0]}`;
       if (!installed)
@@ -146,6 +150,28 @@ try {
     await tx`select public.finish_leave_email(${claimed.item.id},${claimed.item.lease},'failed')`;
     await as(admin);
     await tx`select public.retry_leave_email(${claimed.item.id})`;
+    await tx`select public.admin_employee_manager(${alice.employee},${bob.employee})`;
+    const [directory] = await tx`select public.employee_directory() as value`;
+    assert.equal(directory.value.find((row) => row.id === alice.employee).managerId, bob.employee);
+    await denied(
+      (sp) => sp`select public.admin_employee_manager(${bob.employee},${alice.employee})`,
+      "manager cycles denied",
+    );
+    await denied(
+      (sp) => sp`select public.admin_employee_manager(${alice.employee},${alice.employee})`,
+      "self management denied",
+    );
+    await denied(
+      (sp) => sp`select public.admin_employee_manager(${alice.employee},${randomUUID()})`,
+      "unavailable manager denied",
+    );
+    await as(alice);
+    await denied(
+      (sp) => sp`select public.admin_employee_manager(${alice.employee},${admin.employee})`,
+      "employees cannot change their manager",
+    );
+    await as(admin);
+    await tx`select public.admin_employee_manager(${alice.employee},null)`;
     await denied(
       (sp) => sp`select public.admin_employee_access(${admin.employee},'employee',true)`,
       "administrator cannot lock themselves out",

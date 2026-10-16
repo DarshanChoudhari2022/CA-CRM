@@ -1,4 +1,33 @@
 /* PSB brand layer: shared by CRM, attendance and authentication, not invoice PDFs. */
+.employee-access-form {
+  display: grid;
+  gap: 10px;
+  min-width: 200px;
+  max-width: 260px;
+  white-space: normal;
+}
+.employee-access-form label {
+  display: grid;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 500;
+}
+.employee-access-form select {
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--white);
+  font-size: 16px;
+}
+.employee-access-form small {
+  color: var(--muted);
+  font-size: 12px;
+}
+.invoice-generator-guide {
+  margin-bottom: 24px;
+}
 h1,
 h2,
 h3 {

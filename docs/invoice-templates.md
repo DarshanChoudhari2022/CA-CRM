@@ -1,10 +1,10 @@
 # PSB invoice designs
 
-Administrators can select either supplied design from CRM → Invoices → Generate invoice PDF. The selected design can be changed for a download without changing the saved financial details. Employees cannot open the invoice page, export invoices, read billing details or access PDF URLs.
+Administrators can select either supplied design from CRM → Invoice generator → Generate invoice PDF. The Employee directory also has a Create invoice / PDF shortcut, opening `/crm/invoices?create=1` with the creation form expanded. The selected design can be changed for a download without changing the saved financial details. Employees cannot open the invoice page, export invoices, read billing details or access PDF URLs.
 
 ## Creating an invoice
 
-1. Open CRM → Invoices → Add record.
+1. Open CRM → Invoice generator → Create invoice (or use Create invoice / PDF in Employees).
 2. Select the customer, record name, status and due date.
 3. Under Invoice design and billing details, choose Green invoice (Template 2) or Classic bordered (Template 1).
 4. Choose the printed PDF heading: Invoice or Quotation. This changes the document heading; it does not create a separate quotation pipeline or change how the existing invoice ledger classifies records. Keep a quotation in draft until it is ready to become an invoice.

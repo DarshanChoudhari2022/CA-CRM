@@ -15,7 +15,7 @@ export default async function CrmPage({
   searchParams,
 }: {
   params: Promise<{ module: string }>;
-  searchParams: Promise<{ q?: string; status?: string; page?: string }>;
+  searchParams: Promise<{ q?: string; status?: string; page?: string; create?: string }>;
 }) {
   const { module } = await params;
   if (!isCrmModule(module)) notFound();
@@ -74,7 +74,37 @@ export default async function CrmPage({
   }
   return (
     <>
-      <PageHead eyebrow="CA CRM" title={crmModules[module].title} description="Your firm's records and work." />
+      <PageHead
+        eyebrow="CA CRM"
+        title={module === "invoices" ? "Invoice generator" : crmModules[module].title}
+        description={
+          module === "invoices"
+            ? "Create an invoice, choose either PSB design, then download its PDF. Administrator access only."
+            : "Your firm's records and work."
+        }
+        action={
+          module === "invoices" ? (
+            <Link href="/crm/invoices?create=1" className="button button-primary">
+              Create invoice
+            </Link>
+          ) : undefined
+        }
+      />
+      {module === "invoices" && (
+        <section className="card invoice-generator-guide">
+          <h2>Your two PSB invoice designs</h2>
+          <p>Template 1: Classic green-bordered design. Template 2: Green invoice with payment QR.</p>
+          <p>
+            Open Create invoice, select a client and design, add services and save. Use Generate invoice PDF on the
+            saved invoice below. No external PDF service or API key is needed.
+          </p>
+          {!options.length && (
+            <p>
+              <Link href="/crm/clients">Add a client first →</Link>
+            </p>
+          )}
+        </section>
+      )}
       <form className="filters" style={{ marginBottom: 24 }}>
         <input
           name="q"
@@ -105,7 +135,16 @@ export default async function CrmPage({
         {page > 1 && <Link href={`?${search}&page=${page - 1}`}>Previous</Link>}
         {page * 50 < (records.count ?? 0) && <Link href={`?${search}&page=${page + 1}`}>Next</Link>}
       </div>
-      {admin && <RecordEditor module={module} clients={options} employees={people} admin />}
+      {admin && (
+        <RecordEditor
+          key={`${module}-${filters.create ?? "closed"}`}
+          initialOpen={module === "invoices" && filters.create === "1"}
+          module={module}
+          clients={options}
+          employees={people}
+          admin
+        />
+      )}
       <section className="section grid grid-2">
         {items.map((item) => (
           <article className="card" key={item.id}>

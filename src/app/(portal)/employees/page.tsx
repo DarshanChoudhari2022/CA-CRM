@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { PageHead } from "@/components/page-head";
 import { StatusPill } from "@/components/status-pill";
@@ -7,6 +8,7 @@ import { rpc } from "@/modules/portal/queries";
 import { EmployeeAccessForm } from "./access-form";
 import { AccountButton } from "./account-button";
 import { EmployeeForm } from "./employee-form";
+import { EmployeeManagerForm } from "./manager-form";
 
 type Employee = {
   id: string;
@@ -16,6 +18,7 @@ type Employee = {
   department: string;
   branch: string;
   manager: string | null;
+  managerId: string | null;
   status: string;
   accountLinked: boolean;
   role: "employee" | "admin";
@@ -35,7 +38,16 @@ export default async function EmployeesPage() {
   ]);
   return (
     <>
-      <PageHead eyebrow="People" title="Employee directory" description="Manage your team and their access." />
+      <PageHead
+        eyebrow="People"
+        title="Employee directory"
+        description="Change account roles and reporting managers separately. Only administrators can make these changes."
+        action={
+          <Link href="/crm/invoices?create=1" className="button button-primary">
+            Create invoice / PDF
+          </Link>
+        }
+      />
       <section className="card">
         <div className="section-title">
           <h2>{employees.length} employees</h2>
@@ -76,7 +88,15 @@ export default async function EmployeesPage() {
                   <td>{employee.code}</td>
                   <td>{employee.department}</td>
                   <td>{employee.branch}</td>
-                  <td>{employee.manager ?? "—"}</td>
+                  <td>
+                    <EmployeeManagerForm
+                      employee={employee.id}
+                      manager={employee.managerId ?? ""}
+                      managers={employees
+                        .filter((person) => person.status === "active" && person.id !== employee.id)
+                        .map((person) => ({ id: person.id, name: person.name }))}
+                    />
+                  </td>
                   <td>
                     <StatusPill value={employee.status} />
                   </td>

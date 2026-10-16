@@ -2,6 +2,10 @@ import { describe, expect, it } from "vitest";
 import { workspaceForPath, workspaceNavigation } from "./navigation";
 
 describe("separate workspace navigation", () => {
+  it("makes the invoice generator explicit for administrators only", () => {
+    expect(workspaceNavigation("crm", "admin").some((item) => item.label === "Invoice generator")).toBe(true);
+    expect(workspaceNavigation("crm", "employee").some((item) => item.label === "Invoice generator")).toBe(false);
+  });
   it.each(["employee", "manager", "admin", "partner"] as const)(
     "never exposes CRM links in %s attendance menu",
     (role) => {
