@@ -1,17 +1,29 @@
 @import "tailwindcss";
 
 :root {
-  --font-ui: "Segoe UI Variable", "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
-  --font-brand-serif: var(--font-ui);
-  --font-brand-sans: var(--font-ui);
-  --ink: #182536;
-  --ink-2: #25364b;
-  --muted: #596579;
-  --line: #e1e6ee;
-  --canvas: #f5f7fb;
-  --surface: #ffffff;
-  --accent: #0f6cbd;
-  --blue: #0f6cbd;
+  --navy: #102d40;
+  --deep: #091c2d;
+  --ink: #132e42;
+  --ink-2: #1a425c;
+  --muted: #5a6d7c;
+  --gold: #cca973;
+  --gold-accent: #94703c;
+  --gold-hover: #d8b885;
+  --pale: #f6f4ef;
+  --white: #ffffff;
+  --line: #dedad0;
+  --whatsapp: #25d366;
+  --font-body: "DM Sans", Arial, sans-serif;
+  --font-heading: "Manrope", Arial, sans-serif;
+  --font-brand: "Libre Baskerville", Georgia, serif;
+  --font-ui: var(--font-body);
+  --font-brand-serif: var(--font-brand);
+  --font-brand-sans: var(--font-heading);
+  --page-title-size: clamp(2.65rem, 4.05vw, 4rem);
+  --canvas: var(--pale);
+  --surface: var(--white);
+  --accent: var(--navy);
+  --blue: var(--navy);
   --green: #19734b;
   --amber: #9a6515;
   --red: #b42318;
@@ -28,8 +40,8 @@ body {
   color: var(--ink);
   background: var(--canvas);
   font-family: var(--font-ui);
-  font-size: 14px;
-  line-height: 1.5;
+  font-size: 16px;
+  line-height: 1.7;
   -webkit-font-smoothing: antialiased;
 }
 button,
@@ -43,7 +55,7 @@ a {
   text-decoration: none;
 }
 :focus-visible {
-  outline: 3px solid #7db1ff;
+  outline: 3px solid var(--gold);
   outline-offset: 2px;
 }
 

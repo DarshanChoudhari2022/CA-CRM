@@ -1,0 +1,240 @@
+/* PSB brand layer: shared by CRM, attendance and authentication, not invoice PDFs. */
+h1,
+h2,
+h3 {
+  font-family: var(--font-heading);
+  font-weight: 500;
+  letter-spacing: -0.04em;
+}
+.page-head h1,
+.auth-copy h1 {
+  font-family: var(--font-heading);
+  font-size: var(--page-title-size);
+  font-weight: 500;
+  letter-spacing: -0.04em;
+  line-height: 1.12;
+  overflow-wrap: anywhere;
+}
+h1 em,
+h2 em {
+  font-family: var(--font-brand);
+  font-weight: 400;
+  color: var(--gold-accent);
+}
+.page-head p {
+  font-size: 1.08rem;
+  color: var(--muted);
+}
+.brand strong {
+  font-family: var(--font-brand);
+  font-size: 1.6rem;
+  font-weight: 400;
+  letter-spacing: -0.015em;
+  overflow-wrap: anywhere;
+}
+.brand > div {
+  min-width: 0;
+}
+.brand small {
+  font-family: var(--font-heading);
+  font-size: 0.76rem;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+/* Compact application sidebar; the full header keeps the website's brand scale. */
+.sidebar .brand strong {
+  font-size: 0.98rem;
+  font-weight: 400;
+}
+.sidebar .brand small {
+  font-size: 0.65rem;
+  color: #d4dce1;
+}
+.sidebar,
+.mobile-nav {
+  background: var(--deep);
+}
+.nav a,
+.mobile-nav a {
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 4px;
+  min-height: 44px;
+}
+.nav .active,
+.mobile-nav .active {
+  background: var(--navy);
+  box-shadow: inset 3px 0 var(--gold);
+  border-color: var(--gold);
+  color: var(--white);
+}
+.nav {
+  scrollbar-color: var(--gold-accent) transparent;
+}
+.workspace-label,
+.mobile-nav-kicker {
+  color: var(--gold);
+}
+.mobile-nav-avatar {
+  background: var(--gold);
+  color: var(--deep);
+}
+.button,
+.topbar .button,
+.icon-button,
+.report-month-shortcuts a {
+  border-radius: 4px;
+}
+.button-primary,
+.auth-form .button-primary {
+  border-radius: 4px;
+  background: var(--navy);
+  color: var(--white);
+}
+.button-primary:hover,
+.auth-form .button-primary:hover {
+  background: var(--ink-2);
+}
+.button-secondary:hover,
+.report-month-shortcuts a:hover {
+  background: var(--pale);
+}
+.button-gold {
+  background: var(--gold);
+  color: var(--deep);
+}
+.button-gold:hover {
+  background: var(--gold-hover);
+}
+.field input,
+.field select,
+.field textarea,
+.form-grid select,
+.form-grid textarea,
+.register-filters input,
+.register-filters select,
+.filters input,
+.filters select,
+.form-grid input:not([type="checkbox"]),
+.auth-form .field input {
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--white);
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 500;
+  min-height: 44px;
+}
+.field label,
+.form-grid label,
+.auth-form .field label,
+.card .register-filters label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+}
+.auth-form .field input:focus {
+  border-color: var(--gold-accent);
+  box-shadow: 0 0 0 3px rgb(204 169 115 / 20%);
+}
+.card,
+.auth-form,
+.document-version,
+.daily-photo {
+  border-radius: 8px;
+  border-color: var(--line);
+}
+.card h2 {
+  font-family: var(--font-heading);
+  font-size: 20px;
+  font-weight: 500;
+}
+.auth-form h2 {
+  font-family: var(--font-heading);
+  font-size: 28.8px;
+  font-weight: 650;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.auth-form-topline,
+.auth-form h2 span,
+.eyebrow {
+  color: var(--gold-accent);
+}
+.auth-page,
+.auth-form-wrap {
+  background: var(--pale);
+}
+.auth-visual {
+  background: var(--navy);
+}
+.auth-visual::before {
+  background:
+    radial-gradient(circle at 78% 25%, rgb(204 169 115 / 18%), transparent 26%),
+    linear-gradient(145deg, var(--navy), var(--deep));
+}
+.auth-kicker {
+  color: var(--gold);
+}
+.auth-kicker::before,
+.auth-rule {
+  background: var(--gold);
+}
+.auth-form-intro,
+.auth-form > p:last-child {
+  color: var(--muted);
+}
+.auth-form > p:last-child {
+  font-size: 13px;
+}
+.today-card {
+  background: var(--navy);
+}
+.workspace-card:hover {
+  border-color: var(--gold-accent);
+  background: var(--pale);
+}
+.ai-notice {
+  border-color: var(--line);
+  background: var(--pale);
+  color: var(--ink);
+}
+.ai-finding {
+  border-left-color: var(--gold);
+}
+.optional-badge {
+  background: var(--pale);
+  color: var(--muted);
+}
+@media (max-width: 720px) {
+  .mobile-nav a {
+    font-size: 15px;
+  }
+  .card h2 {
+    font-size: 16.8px;
+  }
+  .auth-visual .brand strong {
+    font-size: 15.68px;
+  }
+  .brand small {
+    font-size: 10.4px;
+  }
+  .field input,
+  .field select,
+  .field textarea,
+  .form-grid select,
+  .form-grid textarea,
+  .register-filters input,
+  .register-filters select,
+  .filters input,
+  .filters select,
+  .form-grid input:not([type="checkbox"]),
+  .auth-form .field input {
+    font-size: 16px;
+  }
+}
+@media (max-width: 650px) {
+  :root {
+    --page-title-size: clamp(2.2rem, 9vw, 2.8rem);
+  }
+}
