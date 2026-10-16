@@ -3,13 +3,15 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { crmModules, isCrmModule } from "@/modules/crm/config";
+import { canUseCrmModule, isAdministrator } from "@/modules/identity/access";
 import { requireIdentity } from "@/modules/identity/session";
 
 export type CrmState = { error?: string; success?: string };
 export async function saveRecord(_: CrmState, form: FormData): Promise<CrmState> {
-  await requireIdentity();
+  const identity = await requireIdentity();
   const module = String(form.get("module"));
   if (!isCrmModule(module)) return { error: "Unknown module." };
+  if (!canUseCrmModule(identity.role, module)) return { error: "Administrator access required." };
   const parsed = z
     .object({
       title: z.string().trim().min(1).max(200),
@@ -35,7 +37,7 @@ export async function saveRecord(_: CrmState, form: FormData): Promise<CrmState>
   return { success: "Saved." };
 }
 export async function recordPayment(_: CrmState, form: FormData): Promise<CrmState> {
-  await requireIdentity();
+  if (!isAdministrator((await requireIdentity()).role)) return { error: "Administrator access required." };
   const parsed = z
     .object({ invoice: z.uuid(), amount: z.coerce.number().positive(), reference: z.string().trim().min(3).max(120) })
     .safeParse(Object.fromEntries(form));

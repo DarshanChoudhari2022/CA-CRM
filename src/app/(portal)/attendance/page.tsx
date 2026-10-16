@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation";
 import { PageHead } from "@/components/page-head";
+import { PunchLocation } from "@/components/punch-location";
 import { StatusPill } from "@/components/status-pill";
 import { createClient } from "@/lib/supabase/server";
+import type { PunchLocation as Location } from "@/modules/attendance/location";
 import { requireIdentity } from "@/modules/identity/session";
 import { rpc } from "@/modules/portal/queries";
 import { CancelRequest } from "../operations/forms";
@@ -18,6 +20,8 @@ type Day = {
   result: string;
   isLate: boolean;
   correctionStatus: string | null;
+  checkInLocation?: Location;
+  checkOutLocation?: Location;
 };
 
 export default async function AttendancePage({ searchParams }: { searchParams: Promise<{ month?: string }> }) {
@@ -51,7 +55,13 @@ export default async function AttendancePage({ searchParams }: { searchParams: P
         <div className="section-title">
           <h2>This month</h2>
           <form className="filters">
-            <input name="month" type="month" defaultValue={month} aria-label="Month" />
+            <input
+              name="month"
+              type="month"
+              min={identity.joinedOn?.slice(0, 7)}
+              defaultValue={month}
+              aria-label="Month"
+            />
             <button type="submit" className="button button-secondary">
               View month
             </button>
@@ -77,9 +87,21 @@ export default async function AttendancePage({ searchParams }: { searchParams: P
                   <td>{day.context.replaceAll("_", " ")}</td>
                   <td>
                     {day.checkIn ?? "—"}
+                    {day.checkIn && (
+                      <div>
+                        <PunchLocation value={day.checkInLocation} />
+                      </div>
+                    )}
                     {day.isLate && <small style={{ color: "var(--amber)", marginLeft: 6 }}>Late</small>}
                   </td>
-                  <td>{day.checkOut ?? "—"}</td>
+                  <td>
+                    {day.checkOut ?? "—"}
+                    {day.checkOut && (
+                      <div>
+                        <PunchLocation value={day.checkOutLocation} />
+                      </div>
+                    )}
+                  </td>
                   <td>{day.duration}</td>
                   <td>
                     <StatusPill value={day.result} />

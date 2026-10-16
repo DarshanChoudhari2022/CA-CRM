@@ -3,11 +3,13 @@ import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import postgres from "postgres";
 import { testDatabaseOptions } from "./test-database-options.mjs";
+import { prepareAccessTest, setTestIdentity } from "./test-session.mjs";
 
 const sql = postgres(process.env.SUPABASE_DB_URL, testDatabaseOptions());
 const rollback = new Error("rollback leave reporting fixtures");
 try {
   await sql.begin(async (tx) => {
+    await prepareAccessTest(tx);
     await tx.unsafe("set local time zone 'Asia/Kolkata'");
     if (process.argv.includes("--preview"))
       await tx.unsafe(
@@ -38,14 +40,14 @@ try {
     await tx`insert into public.leave_requests(organization_id,employee_id,leave_type_id,start_date,end_date,requested_days,reason,state,requested_by,reviewed_by,reviewed_at,request_id) values(${org.id},${employees[1].id},${type.id},current_date,current_date+1,2,'Approved leave fixture','approved',${member},${admin},now(),${randomUUID()})`;
     // Saved excused result is precisely the user's screenshot; missing earlier rows model delayed reconciliation.
     await tx`insert into public.attendance_days(organization_id,employee_id,work_date,branch_id,policy_id,calendar_context,result) values(${org.id},${employees[1].id},current_date,${branch.id},${policy.id},'working_day','excused')`;
-    await tx`select set_config('request.jwt.claim.sub',${member},true)`;
+    await setTestIdentity(tx, member);
     await tx.unsafe("set local role authenticated");
     if (!process.argv.includes("--summary")) {
       const [history] = await tx`select public.my_attendance_history(to_char(current_date,'YYYY-MM')) value`;
       assert.equal(history.value[0].result, "leave_approved", "approved leave must not be labelled generic excused");
     }
     await tx.unsafe("reset role");
-    await tx`select set_config('request.jwt.claim.sub',${admin},true)`;
+    await setTestIdentity(tx, admin);
     await tx.unsafe("set local role authenticated");
     const [summary] = await tx`select public.attendance_month_summary(to_char(current_date,'YYYY-MM')) value`;
     const [day] = await tx`select extract(day from current_date)::int n`;
@@ -83,7 +85,7 @@ try {
       );
     }
     await tx.unsafe("reset role");
-    await tx`select set_config('request.jwt.claim.sub',${member},true)`;
+    await setTestIdentity(tx, member);
     await tx.unsafe("set local role authenticated");
     let denied = false;
     try {

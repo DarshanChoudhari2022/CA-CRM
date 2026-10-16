@@ -51,6 +51,7 @@ jobs:
       - run: node scripts/test-quality-db.mjs
       - run: node scripts/test-leave-reporting-db.mjs
       - run: node scripts/test-automation-db.mjs
+      - run: node scripts/test-access-location-db.mjs
       - run: node scripts/test-attendance-concurrency-db.mjs
       - if: always()
         run: supabase stop

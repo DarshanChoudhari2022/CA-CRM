@@ -7,6 +7,7 @@ import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import postgres from "postgres";
 import { testDatabaseOptions } from "./test-database-options.mjs";
+import { prepareAccessTest, setTestIdentity, testLocation } from "./test-session.mjs";
 
 if (!process.env.SUPABASE_DB_URL) throw new Error("SUPABASE_DB_URL is required.");
 const preview = process.argv.includes("--preview-migration");
@@ -34,6 +35,7 @@ try {
   const before = await sql.begin("read only", catalog);
   try {
     await sql.begin(async (tx) => {
+      await prepareAccessTest(tx);
       await tx.unsafe("set local time zone 'Asia/Kolkata'");
       await tx.unsafe("set local lock_timeout = '5s'");
       await tx.unsafe("set local statement_timeout = '30s'");
@@ -61,7 +63,7 @@ try {
       };
       const asUser = async (user, role = "authenticated") => {
         await tx.unsafe("reset role");
-        await tx`select set_config('request.jwt.claim.sub',${user ?? ""},true)`;
+        await setTestIdentity(tx, user);
         // Fixed allowlist only; never interpolate a user-controlled role name.
         assert.ok(["anon", "authenticated", "service_role"].includes(role));
         await tx.unsafe(`set local role ${role}`);
@@ -121,7 +123,7 @@ try {
       const users = {};
       for (const [name, role, organization] of [
         ["admin", "admin", orgIds[0]],
-        ["manager", "manager", orgIds[0]],
+        ["manager", "employee", orgIds[0]],
         ["member", "employee", orgIds[0]],
         ["unrelated", "employee", orgIds[0]],
         ["foreign", "employee", orgIds[1]],
@@ -181,9 +183,9 @@ try {
       );
       const [team] = await tx`select public.can_view_employee(${users.member.employee}) as own_team,
         public.can_view_employee(${users.unrelated.employee}) as other_team,public.is_reviewer_for(${users.member.employee}) as reviewer`;
-      assert.equal(team.own_team, true, "manager retains direct-report visibility");
+      assert.equal(team.own_team, false, "reporting relationship does not grant employee visibility");
       assert.equal(team.other_team, false, "manager cannot view unrelated employee");
-      assert.equal(team.reviewer, true, "manager retains direct-report review");
+      assert.equal(team.reviewer, false, "only administrators can approve requests");
       await asUser(users.member.user);
       assert.equal(
         (await tx`select id from public.attendance_report_snapshots`).length,
@@ -194,7 +196,7 @@ try {
         (await tx`select public.dashboard_snapshot() as value`)[0].value.today,
         "onboarded dashboard remains usable",
       );
-      await tx`select public.record_attendance_punch('check_in',${randomUUID()})`;
+      await tx`select public.record_attendance_punch('check_in',${randomUUID()},${sql.json(testLocation())})`;
       // Prove the same leave inputs are valid before negative authorization tests;
       // rollback the positive request so later denial cannot be caused by overlap.
       const undoPositive = new Error("rollback positive leave probe");
@@ -215,7 +217,7 @@ try {
 
       for (const condition of ["inactive", "password_required", "employee_inactive"]) {
         await tx.unsafe("reset role");
-        await tx`select set_config('request.jwt.claim.sub','',true)`;
+        await setTestIdentity(tx, null);
         await tx`update public.profiles set active=${condition !== "inactive"},password_change_required=${condition === "password_required"}
           where user_id in (${users.admin.user},${users.member.user})`;
         await tx`update public.employees set active=${condition !== "employee_inactive"}
@@ -257,7 +259,7 @@ try {
               ? ["Active workspace access and password change required", "Active employee access required"]
               : undefined;
           await denied(
-            (sp) => sp`select public.record_attendance_punch('check_out',${randomUUID()})`,
+            (sp) => sp`select public.record_attendance_punch('check_out',${randomUUID()},${sql.json(testLocation())})`,
             `${condition} direct-profile punch blocked`,
             "P0001",
             writeGuard,
@@ -307,7 +309,7 @@ try {
       }
 
       await tx.unsafe("reset role");
-      await tx`select set_config('request.jwt.claim.sub','',true)`;
+      await setTestIdentity(tx, null);
       await tx`update public.employees set active=true where id in (${users.admin.employee},${users.member.employee})`;
       await tx`update public.profiles set active=true,password_change_required=true where user_id in (${users.admin.user},${users.member.user})`;
       await tx`update auth.users set encrypted_password='security-fixture-changed' where id in (${users.admin.user},${users.member.user})`;
@@ -359,6 +361,7 @@ try {
       ? `Security assertion failed: ${error.message.split("\n")[0]}`
       : `Security test failed (${error.code ?? "unexpected error"}).`,
   );
+  if (error instanceof TypeError || error instanceof ReferenceError) console.error(error.message);
   process.exitCode = 1;
 } finally {
   await sql.end();

@@ -6,12 +6,15 @@ import { requireIdentity } from "@/modules/identity/session";
 export default async function CrmReports() {
   const identity = await requireIdentity();
   const client = await createClient();
+  const admin = ["admin", "partner"].includes(identity.role);
   const counts = await Promise.all(
-    Object.entries(crmModules).map(async ([module, config]) => {
-      const { count, error } = await client.from(`crm_${module}`).select("id", { count: "exact", head: true });
-      if (error) throw new Error("CRM reports unavailable.");
-      return { module, title: config.title, count: count ?? 0 };
-    }),
+    Object.entries(crmModules)
+      .filter(([module]) => admin || module !== "invoices")
+      .map(async ([module, config]) => {
+        const { count, error } = await client.from(`crm_${module}`).select("id", { count: "exact", head: true });
+        if (error) throw new Error("CRM reports unavailable.");
+        return { module, title: config.title, count: count ?? 0 };
+      }),
   );
   const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(new Date());
   const overdue = await client
@@ -21,7 +24,6 @@ export default async function CrmReports() {
     .neq("status", "filed")
     .order("due_date")
     .limit(100);
-  const admin = ["admin", "partner"].includes(identity.role);
   const summary = admin ? await client.rpc("crm_financial_summary") : null;
   if (summary?.error) throw new Error("Financial summary unavailable.");
   const amounts = summary?.data as { issued: number; received: number } | null;

@@ -3,11 +3,13 @@ import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import postgres from "postgres";
 import { testDatabaseOptions } from "./test-database-options.mjs";
+import { prepareAccessTest, setTestIdentity } from "./test-session.mjs";
 
 const sql = postgres(process.env.SUPABASE_DB_URL, testDatabaseOptions());
 const rollback = new Error("rollback quality fixtures");
 try {
   await sql.begin(async (tx) => {
+    await prepareAccessTest(tx);
     await tx.unsafe("set local time zone 'Asia/Kolkata'");
     // Match the Storage service's request-local metadata deletion flag for generated, rolled-back rows only.
     await tx`select set_config('storage.allow_delete_query','true',true)`;
@@ -49,7 +51,7 @@ try {
       await tx`insert into public.crm_documents(organization_id,title,owner_id) values(${org.id},'Private document',${employees[1].id}) returning id`;
     const [annualType] =
       await tx`insert into public.leave_types(organization_id,name,code,default_days) values(${org.id},'Annual default','ANN',12) returning id`;
-    await tx`select set_config('request.jwt.claim.sub',${member},true)`;
+    await setTestIdentity(tx, member);
     await tx.unsafe("set local role authenticated");
     const [defaults] = await tx`select public.my_leave_snapshot() as value`;
     assert.equal(
@@ -123,7 +125,7 @@ try {
       (sp) => sp`select public.crm_reserve_document(${randomUUID()},${document.id},'eleventh.png','image/png',68)`,
       "ten-version limit",
     );
-    await tx`select set_config('request.jwt.claim.sub',${stranger},true)`;
+    await setTestIdentity(tx, stranger);
     assert.equal(
       (await tx`select id from public.crm_document_versions`).length,
       0,
@@ -135,13 +137,13 @@ try {
       "unassigned employee cannot download old versions",
     );
     await tx.unsafe("reset role");
-    await tx`update public.profiles set role='manager' where user_id=${admin}`;
-    await tx`select set_config('request.jwt.claim.sub',${admin},true)`;
+    await tx`update public.profiles set role='employee' where user_id=${admin}`;
+    await setTestIdentity(tx, admin);
     await tx.unsafe("set local role authenticated");
-    const [register] = await tx`select public.attendance_register(current_date) as value`;
-    assert.equal(register.value.total, 2, "manager register contains self and direct report only");
-    const [filtered] = await tx`select public.attendance_register(current_date,null,'','M') as value`;
-    assert.equal(filtered.value.total, 1, "employee filter shares scoped register");
+    await denied(
+      (sp) => sp`select public.attendance_register(current_date)`,
+      "employees cannot open administrator register",
+    );
     await tx.unsafe("reset role");
     await tx`update public.profiles set role='admin' where user_id=${admin}`;
     const [task] =

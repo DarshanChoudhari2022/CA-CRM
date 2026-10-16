@@ -2,11 +2,13 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import postgres from "postgres";
 import { testDatabaseOptions } from "./test-database-options.mjs";
+import { prepareAccessTest, setTestIdentity, testLocation } from "./test-session.mjs";
 
 const sql = postgres(process.env.SUPABASE_DB_URL, testDatabaseOptions());
 const rollback = new Error("rollback integrity fixtures");
 try {
   await sql.begin(async (tx) => {
+    await prepareAccessTest(tx);
     await tx.unsafe("set local time zone 'Asia/Kolkata'");
     const admin = randomUUID(),
       member = randomUUID();
@@ -39,7 +41,7 @@ try {
       assert.ok(failure, label);
       if (pattern) assert.match(failure.message, pattern, label);
     };
-    await tx`select set_config('request.jwt.claim.sub',${member},true)`;
+    await setTestIdentity(tx, member);
     await tx.unsafe("set local role authenticated");
     await expectDenied(
       (sp) =>
@@ -63,14 +65,14 @@ try {
     await tx`insert into public.leave_requests(organization_id,employee_id,leave_type_id,start_date,end_date,requested_days,reason,state,requested_by,request_id) values(${org.id},${memberEmployee},${leave.id},current_date,current_date,1,'Approved leave fixture','approved',${member},${randomUUID()})`;
     await tx.unsafe("set local role authenticated");
     await expectDenied(
-      (sp) => sp`select public.record_attendance_punch('check_in',${randomUUID()})`,
+      (sp) => sp`select public.record_attendance_punch('check_in',${randomUUID()},${sql.json(testLocation())})`,
       "full-day leave blocks punches",
       /full-day leave/,
     );
     await tx.unsafe("reset role");
     const [request] =
       await tx`insert into public.attendance_corrections(organization_id,employee_id,work_date,base_revision,proposed_check_in,proposed_check_out,reason,requested_by,request_id) values(${org.id},${memberEmployee},current_date-1,999,now()-interval '2 days',now()-interval '1 day','Stale correction fixture',${member},${randomUUID()}) returning id`;
-    await tx`select set_config('request.jwt.claim.sub',${admin},true)`;
+    await setTestIdentity(tx, admin);
     await tx.unsafe("set local role authenticated");
     await tx`select public.decide_attendance_correction(${request.id},'rejected','Stale correction rejected by reviewer',${randomUUID()})`;
     const [resolved] = await tx`select state from public.attendance_corrections where id=${request.id}`;
@@ -86,7 +88,7 @@ try {
     );
     await tx.unsafe("reset role");
     await tx`insert into public.attendance_months(organization_id,month_start,state) values(${org.id},date_trunc('month',current_date)::date,'closed') on conflict(organization_id,month_start) do update set state='closed'`;
-    await tx`select set_config('request.jwt.claim.sub',${member},true)`;
+    await setTestIdentity(tx, member);
     await tx.unsafe("set local role authenticated");
     await expectDenied(
       (sp) =>

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { PageHead } from "@/components/page-head";
+import { PunchLocation } from "@/components/punch-location";
 import { StatusPill } from "@/components/status-pill";
 import { createClient } from "@/lib/supabase/server";
 import { formatWorkedMinutes } from "@/modules/attendance/duration";
@@ -143,9 +144,21 @@ export default async function TeamAttendance({
                     <td>{row.context.replaceAll("_", " ")}</td>
                     <td>
                       {time(row.check_in_at)}
+                      {row.check_in_at && (
+                        <div>
+                          <PunchLocation value={row.checkInLocation} />
+                        </div>
+                      )}
                       {row.is_late && <span className="status status-amber">Late</span>}
                     </td>
-                    <td>{time(row.check_out_at)}</td>
+                    <td>
+                      {time(row.check_out_at)}
+                      {row.check_out_at && (
+                        <div>
+                          <PunchLocation value={row.checkOutLocation} />
+                        </div>
+                      )}
+                    </td>
                     <td>{row.duration_minutes === null ? "—" : formatWorkedMinutes(row.duration_minutes)}</td>
                     <td>
                       <StatusPill value={row.result} />

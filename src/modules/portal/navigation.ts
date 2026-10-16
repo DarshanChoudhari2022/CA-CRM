@@ -1,3 +1,4 @@
+import { canUseCrmModule } from "@/modules/identity/access";
 import type { PortalIdentity } from "@/modules/identity/session";
 export type Workspace = "attendance" | "crm" | "launcher";
 type NavItem = {
@@ -28,7 +29,7 @@ export function workspaceNavigation(workspace: Workspace, role: PortalIdentity["
             { href: "/crm/automations", label: "Reminder history", icon: "reports" as const },
           ]
         : []),
-    ];
+    ].filter((item) => canUseCrmModule(role, item.href.split("/")[2] ?? "")) as NavItem[];
   const links: NavItem[] = [{ href: "/dashboard", label: "Overview", icon: "overview" }];
   if (!["admin", "partner"].includes(role))
     links.push(

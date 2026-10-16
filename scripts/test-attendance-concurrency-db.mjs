@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import postgres from "postgres";
 import { testDatabaseOptions } from "./test-database-options.mjs";
+import { setTestIdentity } from "./test-session.mjs";
 
 const sql = postgres(process.env.SUPABASE_DB_URL, { ...testDatabaseOptions(), max: 3 });
 const cleanupId = process.argv.find((arg) => arg.startsWith("--cleanup-fixture="))?.split("=")[1];
@@ -27,6 +28,7 @@ try {
         [member, "M", "employee"],
       ]) {
         await tx`insert into auth.users(id,email,encrypted_password) values(${user},${`${user}@example.invalid`},'fixture')`;
+        await tx`insert into auth.sessions(id,user_id,created_at,updated_at) values(${user},${user},now(),now())`;
         await tx`insert into public.profiles(user_id,organization_id,full_name,role) values(${user},${orgId},${code},${role})`;
         const [e] =
           await tx`insert into public.employees(organization_id,profile_user_id,employee_code,full_name,work_email,branch_id,policy_id,joined_on) values(${orgId},${user},${code},${code},${`${user}@example.invalid`},${branch.id},${policy.id},current_date-70) returning id`;
@@ -44,7 +46,7 @@ try {
     const asUser = async (tx, user) => {
       await tx.unsafe("set local time zone 'Asia/Kolkata'");
       await tx.unsafe("set local statement_timeout='10s'");
-      await tx`select set_config('request.jwt.claim.sub',${user},true)`;
+      await setTestIdentity(tx, user);
       await tx.unsafe("set local role authenticated");
     };
     const leaves = await Promise.allSettled(
@@ -131,6 +133,7 @@ try {
       "attendance_report_snapshots",
       "attendance_events",
       "attendance_corrections",
+      "leave_email_notifications",
       "leave_requests",
       "leave_balances",
       "attendance_days",

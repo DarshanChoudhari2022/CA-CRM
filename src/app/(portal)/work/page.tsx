@@ -18,6 +18,7 @@ export default async function WorkPage() {
     .from("daily_work_items")
     .select("id,title,notes,status,work_date")
     .eq("employee_id", identity.employeeId)
+    .gte("work_date", identity.joinedOn ?? "0001-01-01")
     .order("work_date", { ascending: false })
     .order("created_at", { ascending: false })
     .limit(100);

@@ -3,7 +3,8 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ punch: vi.fn(), refresh: vi.fn() }));
+const mocks = vi.hoisted(() => ({ punch: vi.fn(), refresh: vi.fn(), location: vi.fn() }));
+vi.mock("@/modules/attendance/location", () => ({ capturePunchLocation: mocks.location }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: mocks.refresh }) }));
 vi.mock("next/image", () => ({ default: () => null }));
 vi.mock("./report-actions", () => ({ saveDailyReport: vi.fn() }));
@@ -19,6 +20,12 @@ it("keeps tasks/photos optional and checkout independent; displays checkout time
   document.body.append(container);
   const root = createRoot(container);
   mocks.punch.mockResolvedValue({ success: "Check-out saved. Time worked today: 7h 30m." });
+  mocks.location.mockResolvedValue({
+    latitude: 19.88,
+    longitude: 75.34,
+    accuracy: 20,
+    capturedAt: new Date().toISOString(),
+  });
   try {
     await act(async () =>
       root.render(
@@ -36,7 +43,11 @@ it("keeps tasks/photos optional and checkout independent; displays checkout time
     expect(button?.disabled).toBe(false);
     expect(button?.closest("form")).toBeNull();
     await act(async () => button?.click());
-    expect(mocks.punch).toHaveBeenCalledWith("check_out", expect.any(String));
+    expect(mocks.punch).toHaveBeenCalledWith(
+      "check_out",
+      expect.any(String),
+      expect.objectContaining({ latitude: 19.88, longitude: 75.34 }),
+    );
     expect(container.textContent).toContain("Time worked today: 7h 30m");
   } finally {
     await act(async () => root.unmount());
@@ -59,6 +70,22 @@ it("shows the saved duration after a shift ends without running a client clock",
     );
     expect(container.textContent).toContain("Time worked today");
     expect(container.textContent).toContain("7h 30m");
+  } finally {
+    await act(async () => root.unmount());
+  }
+});
+
+it("does not save a punch when location permission fails and lets the employee retry", async () => {
+  const container = document.createElement("div");
+  const root = createRoot(container);
+  mocks.punch.mockClear();
+  mocks.location.mockRejectedValue(new Error("Allow location access in your browser settings, then try again."));
+  try {
+    await act(async () => root.render(<PunchButton canCheckIn canCheckOut={false} />));
+    await act(async () => container.querySelector("button")?.click());
+    expect(mocks.punch).not.toHaveBeenCalled();
+    expect(container.textContent).toContain("Allow location access");
+    expect(container.querySelector("button")?.disabled).toBe(false);
   } finally {
     await act(async () => root.unmount());
   }

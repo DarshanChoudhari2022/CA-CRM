@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { PunchLocation } from "./location";
 export const registerResults = [
   "not_started",
   "open",
@@ -33,6 +34,8 @@ export type RegisterRow = {
   duration_minutes: number | null;
   is_late: boolean;
   result: string;
+  checkInLocation?: PunchLocation;
+  checkOutLocation?: PunchLocation;
 };
 export type AttendanceRegister = { date: string; page: number; total: number; items: RegisterRow[] };
 export function registerArgs(filters: RegisterFilters) {

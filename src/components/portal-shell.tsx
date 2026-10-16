@@ -4,11 +4,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { signOut } from "@/app/(portal)/actions";
+import { roleLabel } from "@/modules/identity/access";
 import type { PortalIdentity } from "@/modules/identity/session";
 import { getPendingApprovalCount } from "@/modules/portal/approval-count";
 import { workspaceForPath, workspaceNavigation } from "@/modules/portal/navigation";
 import { Brand } from "./brand";
 import { navIcons } from "./icons";
+import { SessionExpiry } from "./session-expiry";
 
 export function PortalShell({ children, identity }: { children: React.ReactNode; identity: PortalIdentity }) {
   const path = usePathname();
@@ -154,6 +156,7 @@ export function PortalShell({ children, identity }: { children: React.ReactNode;
   });
   return (
     <div className="portal" data-workspace={workspace}>
+      <SessionExpiry deadline={identity.sessionExpiresAt} />
       <aside className="sidebar" ref={sidebar}>
         <Brand />
         <div className="workspace-label">{name}</div>
@@ -162,7 +165,7 @@ export function PortalShell({ children, identity }: { children: React.ReactNode;
         </nav>
         <div className="sidebar-foot">
           <strong>{identity.fullName}</strong>
-          <span>{identity.role}</span>
+          <span>{roleLabel(identity.role)}</span>
         </div>
       </aside>
       <div className="main">
@@ -243,7 +246,7 @@ export function PortalShell({ children, identity }: { children: React.ReactNode;
             <span className="mobile-nav-avatar">{identity.fullName.slice(0, 1).toUpperCase()}</span>
             <span>
               <strong>{identity.fullName}</strong>
-              <small>{identity.role}</small>
+              <small>{roleLabel(identity.role)}</small>
             </span>
           </div>
         </div>

@@ -1,8 +1,10 @@
 import { redirect } from "next/navigation";
 import { PageHead } from "@/components/page-head";
 import { StatusPill } from "@/components/status-pill";
+import { roleLabel } from "@/modules/identity/access";
 import { requireIdentity } from "@/modules/identity/session";
 import { rpc } from "@/modules/portal/queries";
+import { EmployeeAccessForm } from "./access-form";
 import { AccountButton } from "./account-button";
 import { EmployeeForm } from "./employee-form";
 
@@ -16,6 +18,8 @@ type Employee = {
   manager: string | null;
   status: string;
   accountLinked: boolean;
+  role: "employee" | "admin";
+  joinedOn: string;
 };
 
 export default async function EmployeesPage() {
@@ -49,6 +53,7 @@ export default async function EmployeesPage() {
                 <th>Branch</th>
                 <th>Manager</th>
                 <th>Status</th>
+                <th>Role / access</th>
                 <th>Account</th>
               </tr>
             </thead>
@@ -74,6 +79,16 @@ export default async function EmployeesPage() {
                   <td>{employee.manager ?? "—"}</td>
                   <td>
                     <StatusPill value={employee.status} />
+                  </td>
+                  <td>
+                    {roleLabel(employee.role)}
+                    <div className="stat-note">Joined {employee.joinedOn}</div>
+                    <EmployeeAccessForm
+                      employee={employee.id}
+                      role={employee.role}
+                      active={employee.status === "active"}
+                      linked={employee.accountLinked}
+                    />
                   </td>
                   <td>
                     <AccountButton employeeId={employee.id} accountLinked={employee.accountLinked} />

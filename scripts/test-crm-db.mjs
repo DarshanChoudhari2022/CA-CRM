@@ -2,11 +2,13 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import postgres from "postgres";
 import { testDatabaseOptions } from "./test-database-options.mjs";
+import { prepareAccessTest, setTestIdentity } from "./test-session.mjs";
 
 const sql = postgres(process.env.SUPABASE_DB_URL, testDatabaseOptions());
 const rollback = new Error("rollback CRM fixtures");
 try {
   await sql.begin(async (tx) => {
+    await prepareAccessTest(tx);
     await tx.unsafe("set local time zone 'Asia/Kolkata'");
     const admin = randomUUID(),
       member = randomUUID();
@@ -24,7 +26,7 @@ try {
     await tx`update public.profiles set employee_id=${a.id} where user_id=${admin}`;
     await tx`update public.profiles set employee_id=${m.id} where user_id=${member}`;
     await tx`insert into public.crm_clients(organization_id,title) values(${otherOrg.id},'Other organization private')`;
-    await tx`select set_config('request.jwt.claim.sub',${admin},true)`;
+    await setTestIdentity(tx, admin);
     await tx.unsafe("set local role authenticated");
     const rejected = async (query, label) => {
       let denied = false;
@@ -100,12 +102,12 @@ try {
     await tx.unsafe("set local role authenticated");
     await save("tasks", { title: "Unrelated task", status: "todo", owner_id: unrelated.id });
     await tx.unsafe("reset role");
-    await tx`update public.profiles set role='manager' where user_id=${admin}`;
+    await tx`update public.profiles set role='employee' where user_id=${admin}`;
     await tx.unsafe("set local role authenticated");
     assert.equal(
       (await tx`select id from public.crm_tasks`).length,
-      2,
-      "manager sees own and direct-report tasks, not unrelated employees",
+      1,
+      "employee sees own tasks without inheriting direct-report tasks",
     );
     await tx.unsafe("reset role");
     await tx`update public.profiles set role='admin' where user_id=${admin}`;
@@ -157,7 +159,7 @@ try {
         sp`select public.crm_reserve_send(${request},${ticket},'gmail','test@example.invalid','Test','Reviewed body')`,
       "duplicate send denied",
     );
-    await tx`select set_config('request.jwt.claim.sub',${member},true)`;
+    await setTestIdentity(tx, member);
     assert.equal((await tx`select id from public.ca_agent_jobs`).length, 0, "employee cannot read admin workpaper");
     await rejected(
       (sp) => sp`select public.ca_review_knowledge(${reference.id},'retired')`,
@@ -169,12 +171,12 @@ try {
     );
     const [memberPaper] =
       await tx`select public.ca_create_job('documentation','Employee evidence review','Review the assigned task using the supplied evidence.','India','Fixture period',${converted.id},${randomUUID()}) as id`;
-    await tx`select set_config('request.jwt.claim.sub',${admin},true)`;
+    await setTestIdentity(tx, admin);
     await rejected(
       (sp) => sp`select public.ca_start_job(${memberPaper.id},${randomUUID()},'fixture-model','[]'::jsonb)`,
       "administrator cannot widen employee evidence through generation",
     );
-    await tx`select set_config('request.jwt.claim.sub',${member},true)`;
+    await setTestIdentity(tx, member);
     const memberLease = randomUUID();
     const evidence = [{ id: `tasks:${ownTask}`, title: "Assigned task", content: "Own employee task evidence" }];
     await tx`select public.ca_start_job(${memberPaper.id},${memberLease},'fixture-model',${sql.json(evidence)})`;
