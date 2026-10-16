@@ -29,6 +29,7 @@ try {
     "20261016100000_access_location_sessions",
     "20261016103000_leave_email_notifications",
     "20261016120000_invoice_templates",
+    "20261016140000_employee_manager_controls",
   ]) {
     const version = name.split("_")[0];
     const source = await readFile(new URL(`../supabase/migrations/${name}.sql`, import.meta.url), "utf8");

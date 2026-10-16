@@ -18,7 +18,7 @@ export function workspaceNavigation(workspace: Workspace, role: PortalIdentity["
       { href: "/crm/leads", label: "Leads", icon: "overview" },
       { href: "/crm/documents", label: "Documents", icon: "approvals" },
       { href: "/crm/compliance", label: "Compliance", icon: "leave" },
-      { href: "/crm/invoices", label: "Invoices", icon: "reports" },
+      { href: "/crm/invoices", label: "Invoice generator", icon: "reports" },
       { href: "/crm/tasks", label: "Tasks", icon: "work" },
       { href: "/crm/support", label: "Support", icon: "employees" },
       { href: "/crm/ai-team", label: "CA AI team", icon: "approvals" },

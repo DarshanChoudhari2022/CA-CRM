@@ -4,17 +4,27 @@ import { type CrmModule, type CrmOption, type CrmRecord, crmModules } from "@/mo
 import { convertLead, recordPayment, saveRecord } from "./actions";
 import { InvoiceFields } from "./invoice-fields";
 
-export function RecordEditor(props: ComponentProps<typeof RecordForm>) {
-  const [visited, setVisited] = useState(false);
+export function RecordEditor({
+  initialOpen = false,
+  ...props
+}: ComponentProps<typeof RecordForm> & { initialOpen?: boolean }) {
+  const [visited, setVisited] = useState(initialOpen);
   return (
     <details
+      open={initialOpen || undefined}
       className={props.item ? undefined : "card section"}
       onToggle={(event) => {
         if (event.currentTarget.open) setVisited(true);
       }}
     >
       <summary>
-        {props.item ? "Edit record" : props.module === "compliance" ? "Add compliance task" : "Add record"}
+        {props.item
+          ? "Edit record"
+          : props.module === "invoices"
+            ? "Create invoice"
+            : props.module === "compliance"
+              ? "Add compliance task"
+              : "Add record"}
       </summary>
       {/* Mount on first open, then preserve unsaved input across close/reopen. */}
       {visited && <RecordForm {...props} />}
@@ -41,7 +51,7 @@ export function RecordForm({
   const billingLocked = module === "invoices" && Boolean(item && item.status !== "draft");
   return (
     <form action={action} className="card">
-      <h2>{item ? "Edit record" : "Add record"}</h2>
+      <h2>{item ? "Edit record" : module === "invoices" ? "Create invoice" : "Add record"}</h2>
       <input name="module" type="hidden" value={module} />
       <input name="id" type="hidden" value={item?.id ?? ""} />
       {state.error && (
