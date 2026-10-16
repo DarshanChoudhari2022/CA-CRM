@@ -121,8 +121,10 @@ try {
     const [hist] =
       await tx`select public.my_attendance_history(to_char(now() at time zone 'Asia/Kolkata','YYYY-MM')) as value`;
     assert.ok(hist.value.some((row) => row.checkInLocation?.latitude === location.latitude));
+    const [nextWorkday] =
+      await tx`select d::date as value from generate_series((now() at time zone 'Asia/Kolkata')::date+1,(now() at time zone 'Asia/Kolkata')::date+7,interval '1 day') d where extract(isodow from d)<7 order by d limit 1`;
     const [request] =
-      await tx`select public.submit_leave_request(${leaveType.id},((now() at time zone 'Asia/Kolkata')::date+1),((now() at time zone 'Asia/Kolkata')::date+1),'full_day','Medical appointment fixture',${randomUUID()}) as id`;
+      await tx`select public.submit_leave_request(${leaveType.id},${nextWorkday.value}::date,${nextWorkday.value}::date,'full_day','Medical appointment fixture',${randomUUID()}) as id`;
     await tx.unsafe("reset role");
     assert.equal(
       (await tx`select * from public.leave_email_notifications where leave_request_id=${request.id}`).length,
