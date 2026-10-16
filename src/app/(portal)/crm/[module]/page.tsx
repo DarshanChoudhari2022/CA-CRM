@@ -128,9 +128,19 @@ export default async function CrmPage({
               </p>
             )}
             {module === "invoices" && admin && (
-              <a className="button button-secondary" href={`/crm/invoices/${item.id}/pdf`}>
-                Download invoice PDF
-              </a>
+              <form action={`/crm/invoices/${item.id}/pdf`} method="get" className="filters">
+                <select
+                  name="template"
+                  aria-label={`PDF design for ${item.title}`}
+                  defaultValue={item.invoice_details?.template ?? "modern"}
+                >
+                  <option value="modern">Green invoice - Template 2</option>
+                  <option value="classic">Classic bordered - Template 1</option>
+                </select>
+                <button className="button button-secondary" type="submit">
+                  Generate invoice PDF
+                </button>
+              </form>
             )}
             {(admin || !["clients", "leads", "invoices"].includes(module)) && (
               <RecordEditor module={module} item={item} clients={options} employees={people} admin={admin} />

@@ -73,5 +73,6 @@ export type CrmRecord = {
   amount?: number;
   storage_path?: string;
   created_at: string;
+  invoice_details?: import("./invoice-details").InvoiceDetails;
 };
 export type CrmOption = { id: string; title: string };

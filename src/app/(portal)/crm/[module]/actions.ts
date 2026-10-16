@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { crmModules, isCrmModule } from "@/modules/crm/config";
+import { invoiceDetailsSchema, invoiceTotals } from "@/modules/crm/invoice-details";
 import { canUseCrmModule, isAdministrator } from "@/modules/identity/access";
 import { requireIdentity } from "@/modules/identity/session";
 
@@ -30,7 +31,26 @@ export async function saveRecord(_: CrmState, form: FormData): Promise<CrmState>
   const id = String(form.get("id") ?? "");
   if (id && !z.uuid().safeParse(id).success) return { error: "Invalid record." };
   const supabase = await createClient();
-  const { error } = await supabase.rpc("crm_save", { p_module: module, p_id: id || null, p_values: parsed.data });
+  const values: Record<string, unknown> = { ...parsed.data };
+  if (module === "invoices" && (String(form.get("invoice_details") ?? "") || !id)) {
+    let input: unknown;
+    try {
+      input = JSON.parse(String(form.get("invoice_details") ?? "{}"));
+    } catch {
+      return { error: "Check the invoice details." };
+    }
+    const details = invoiceDetailsSchema.safeParse(input);
+    if (!details.success) return { error: details.error.issues[0]?.message ?? "Check the invoice items." };
+    try {
+      const total = invoiceTotals(details.data).total;
+      if (total <= 0 || Math.abs(total - Number(parsed.data.amount)) > 0.004)
+        return { error: "Invoice total must match the service amounts and discount." };
+      values.invoice_details = details.data;
+    } catch (error) {
+      return { error: error instanceof Error ? error.message : "Check invoice amounts." };
+    }
+  }
+  const { error } = await supabase.rpc("crm_save", { p_module: module, p_id: id || null, p_values: values });
   if (error) return { error: error.message };
   revalidatePath(`/crm/${module}`);
   revalidatePath("/crm/reports");

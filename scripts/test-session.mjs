@@ -5,6 +5,7 @@ export async function prepareAccessTest(tx) {
   for (const [name, marker] of [
     ["20261016100000_access_location_sessions", "public.portal_session_context()"],
     ["20261016103000_leave_email_notifications", "public.claim_leave_email(uuid,uuid)"],
+    ["20261016120000_invoice_templates", "public.validate_invoice_template()"],
   ]) {
     const [existing] = await tx`select to_regprocedure(${marker}) as value`;
     if (!existing.value)
