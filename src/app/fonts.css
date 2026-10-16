@@ -1,0 +1,22 @@
+/* Locally hosted Latin variable fonts; licenses are in /assets/fonts/. */
+@font-face {
+  font-family: "DM Sans";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("/assets/fonts/dm-sans-latin.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Manrope";
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url("/assets/fonts/manrope-latin.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Libre Baskerville";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("/assets/fonts/libre-baskerville-latin.woff2") format("woff2");
+}
