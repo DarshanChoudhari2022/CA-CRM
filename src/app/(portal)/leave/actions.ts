@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { isAdministrator } from "@/modules/identity/access";
 import { requireIdentity } from "@/modules/identity/session";
 import { leaveRequestSchema } from "@/modules/leave/domain";
+import { leaveWeb3FormsKey } from "@/modules/leave/email-config";
 import type { LeaveEmailDelivery, LeaveEmailOutcome } from "@/modules/leave/email-delivery";
 import { prepareLeaveNotification } from "@/modules/leave/notifications";
 
@@ -62,7 +63,7 @@ export async function retryLeaveEmail(_: LeaveState, form: FormData): Promise<Le
   if (!isAdministrator(identity.role)) return { error: "Administrator access required." };
   const id = z.uuid().safeParse(form.get("id"));
   if (!id.success) return { error: "Invalid notification." };
-  if (!process.env.LEAVE_WEB3FORMS_ACCESS_KEY) return { error: "Configure the office Web3Forms access key first." };
+  if (!leaveWeb3FormsKey()) return { error: "Configure the office Web3Forms access key first." };
   const client = await createClient();
   const { data: row, error } = await client
     .from("leave_email_notifications")

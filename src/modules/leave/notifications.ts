@@ -1,4 +1,5 @@
 import { automationStore } from "@/modules/crm/automation/store";
+import { leaveWeb3FormsKey } from "./email-config";
 import type { LeaveEmailDelivery } from "./email-delivery";
 
 type LeaveNotice = {
@@ -22,12 +23,18 @@ export function leaveEmailPayload(notice: LeaveNotice, accessKey: string) {
     replyto: notice.email,
     name: notice.employee,
     email: notice.email,
+    leave_type: notice.leaveType,
+    start_date: notice.start,
+    end_date: notice.end,
+    working_days: String(notice.days),
+    reason: notice.reason,
+    request_reference: notice.requestId,
     message: `${notice.employee} has applied for ${notice.leaveType}.\nDates: ${notice.start} to ${notice.end}\nWorking days: ${notice.days}\nReason: ${notice.reason}\nRequest: ${notice.requestId}\nReview in PSB Workspace > Attendance > Approvals.`,
   };
 }
 
 export async function sendLeaveNotification(organization: string, request?: string) {
-  const key = process.env.LEAVE_WEB3FORMS_ACCESS_KEY;
+  const key = leaveWeb3FormsKey();
   if (!key || process.env.LEAVE_WEB3FORMS_SERVER_ENABLED !== "true") return "pending" as const;
   const store = automationStore();
   const claimed = await store.rpc("claim_leave_email", { p_org: organization, p_request: request ?? null });
@@ -75,7 +82,7 @@ export async function prepareLeaveNotification(
   organization: string,
   request: string,
 ): Promise<LeaveEmailDelivery | undefined> {
-  const key = process.env.LEAVE_WEB3FORMS_ACCESS_KEY;
+  const key = leaveWeb3FormsKey();
   if (!key) return;
   const { data, error } = await automationStore().rpc("claim_leave_email", { p_org: organization, p_request: request });
   if (error) throw new Error("Leave notification queue unavailable");
