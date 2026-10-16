@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { leaveWeb3FormsKey } from "@/modules/leave/email-config";
 import { EmailRetry } from "./email-retry";
 
 type Notice = {
@@ -15,7 +16,7 @@ export async function LeaveEmailLog() {
     .select("id,state,last_error,created_at,leave_requests(start_date,end_date,employees(full_name))")
     .order("created_at", { ascending: false })
     .limit(20);
-  const configured = Boolean(process.env.LEAVE_WEB3FORMS_ACCESS_KEY);
+  const configured = Boolean(leaveWeb3FormsKey());
   return (
     <details className="card section">
       <summary>Office leave emails</summary>
