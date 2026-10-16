@@ -8,6 +8,7 @@ import { rpc } from "@/modules/portal/queries";
 import { reportTimezone } from "../reports/data";
 import { localMonth, monthSchema } from "../reports/report";
 import { DecisionButtons } from "./decision-buttons";
+import { LeaveEmailLog } from "./email-log";
 
 type Approval = {
   id: string;
@@ -73,6 +74,7 @@ export default async function ApprovalsPage({
         title="Requests needing attention"
         description="Review attendance corrections and employee leave requests."
       />
+      {identity.role === "admin" && <LeaveEmailLog />}
       <section className="card">
         <div className="table-wrap">
           <table>

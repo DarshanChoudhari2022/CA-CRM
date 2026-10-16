@@ -2,11 +2,13 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import postgres from "postgres";
 import { testDatabaseOptions } from "./test-database-options.mjs";
+import { prepareAccessTest, setTestIdentity } from "./test-session.mjs";
 
 const sql = postgres(process.env.SUPABASE_DB_URL, testDatabaseOptions());
 const rollback = new Error("rollback fixtures");
 try {
   await sql.begin(async (tx) => {
+    await prepareAccessTest(tx);
     await tx.unsafe("set local time zone 'Asia/Kolkata'");
     const userA = randomUUID();
     const userB = randomUUID();
@@ -35,7 +37,7 @@ try {
       values(${org.id},${employeeB.id},current_date,0,now()-interval '8 hours',now(),'Test fixture correction',${userB},${randomUUID()})`;
     const [other] =
       await tx`insert into public.daily_work_items(organization_id,employee_id,work_date,title) values(${org.id},${employeeB.id},current_date,'Private work') returning id`;
-    await tx`select set_config('request.jwt.claim.sub',${userA},true)`;
+    await setTestIdentity(tx, userA);
     await tx.unsafe("set local role authenticated");
     const [employeeCount] = await tx`select public.pending_approval_count() as count`;
     assert.equal(Number(employeeCount.count), 0, "employees cannot see reviewer counts");
@@ -60,15 +62,15 @@ try {
     assert.equal(Number(adminCount.count), 2, "count includes colleague leave and correction but not own leave");
     assert.equal(Number(adminCount.count), adminCount.list_count, "count matches actionable requests");
     await tx.unsafe("reset role");
-    await tx`update public.profiles set role='manager' where user_id=${userA}`;
+    await tx`update public.profiles set role='employee' where user_id=${userA}`;
     await tx.unsafe("set local role authenticated");
     const [unassignedCount] = await tx`select public.pending_approval_count() as count`;
-    assert.equal(Number(unassignedCount.count), 0, "manager cannot count employees outside their team");
+    assert.equal(Number(unassignedCount.count), 0, "employee cannot count other employees' requests");
     await tx.unsafe("reset role");
     await tx`update public.employees set manager_id=${employeeA.id} where id=${employeeB.id}`;
     await tx.unsafe("set local role authenticated");
     const [managerCount] = await tx`select public.pending_approval_count() as count`;
-    assert.equal(Number(managerCount.count), 2, "manager counts own team's pending requests");
+    assert.equal(Number(managerCount.count), 0, "reporting relationship does not grant approval permissions");
     await tx.unsafe("reset role");
     await tx`update public.leave_requests set state='cancelled' where employee_id=${employeeB.id}`;
     await tx`update public.attendance_corrections set state='rejected' where employee_id=${employeeB.id}`;

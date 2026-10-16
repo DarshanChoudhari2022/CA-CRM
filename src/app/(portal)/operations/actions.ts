@@ -12,6 +12,8 @@ export async function operation(
   if (kind !== "cancel" && !["admin", "partner"].includes(identity.role)) return { error: "Administrator required." };
   const client = await createClient();
   const value = (name: string) => String(form.get(name) ?? "");
+  if (kind === "employee" && !["employee", "admin"].includes(value("role")))
+    return { error: "Choose Employee or Administrator." };
   let result: { error: { message: string } | null };
   if (kind === "holiday")
     result = await client.rpc("admin_add_holiday", {

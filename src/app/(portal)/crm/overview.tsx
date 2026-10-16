@@ -126,18 +126,20 @@ export function CrmOverviewView({ data, admin }: { data: CrmOverview; admin: boo
           <span className="crm-muted">Everything in its place</span>
         </div>
         <div className="crm-tools-grid">
-          {destinations.map(({ href, icon: Icon, title, note }) => (
-            <Link href={href} prefetch={false} className="crm-tool" key={href}>
-              <span className="crm-tool-icon">
-                <Icon size={20} aria-hidden="true" />
-              </span>
-              <div>
-                <h3>{title}</h3>
-                <p>{note}</p>
-              </div>
-              <ArrowRight size={16} aria-hidden="true" />
-            </Link>
-          ))}
+          {destinations
+            .filter(({ href }) => admin || href !== "/crm/invoices")
+            .map(({ href, icon: Icon, title, note }) => (
+              <Link href={href} prefetch={false} className="crm-tool" key={href}>
+                <span className="crm-tool-icon">
+                  <Icon size={20} aria-hidden="true" />
+                </span>
+                <div>
+                  <h3>{title}</h3>
+                  <p>{note}</p>
+                </div>
+                <ArrowRight size={16} aria-hidden="true" />
+              </Link>
+            ))}
         </div>
       </section>
       <p className="crm-scope-note">Live records visible to your role · Attendance is managed in its own workspace</p>

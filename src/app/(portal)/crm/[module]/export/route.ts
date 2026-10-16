@@ -1,12 +1,15 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { crmModules, isCrmModule } from "@/modules/crm/config";
+import { canUseCrmModule } from "@/modules/identity/access";
 import { requireIdentity } from "@/modules/identity/session";
 
 export async function GET(request: Request, { params }: { params: Promise<{ module: string }> }) {
-  await requireIdentity();
+  const identity = await requireIdentity();
   const { module } = await params;
   if (!isCrmModule(module)) return new NextResponse("Unknown module", { status: 404 });
+  if (!canUseCrmModule(identity.role, module))
+    return new NextResponse("Administrator access required", { status: 403 });
   const filters = new URL(request.url).searchParams;
   const client = await createClient();
   const data: Array<{ title: string; status: string; created_at: string }> = [];

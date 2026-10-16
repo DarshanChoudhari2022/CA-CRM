@@ -2,11 +2,13 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import postgres from "postgres";
 import { testDatabaseOptions } from "./test-database-options.mjs";
+import { prepareAccessTest, setTestIdentity, testLocation } from "./test-session.mjs";
 
 const sql = postgres(process.env.SUPABASE_DB_URL, testDatabaseOptions());
 const rollback = new Error("rollback day report fixtures");
 try {
   await sql.begin(async (tx) => {
+    await prepareAccessTest(tx);
     await tx.unsafe("set local time zone 'Asia/Kolkata'");
     const a = randomUUID(),
       b = randomUUID();
@@ -22,7 +24,7 @@ try {
       await tx`insert into public.employees(organization_id,profile_user_id,employee_code,full_name,work_email,branch_id,policy_id,joined_on) values(${org.id},${b},'B','B',${`${b}@example.invalid`},${branch.id},${policy.id},current_date-1) returning id`;
     await tx`update public.profiles set employee_id=${ea.id} where user_id=${a}`;
     await tx`update public.profiles set employee_id=${eb.id} where user_id=${b}`;
-    await tx`select set_config('request.jwt.claim.sub',${a},true)`;
+    await setTestIdentity(tx, a);
     await tx.unsafe("set local role authenticated");
     const rejected = async (query, label) => {
       let denied = false;
@@ -66,7 +68,7 @@ try {
       (sp) => sp`select public.cancel_daily_photo(${photoId})`,
       "ready photo cannot be discarded as unfinished",
     );
-    await tx`select set_config('request.jwt.claim.sub',${b},true)`;
+    await setTestIdentity(tx, b);
     assert.equal((await tx`select id from public.daily_work_reports`).length, 0, "colleague report hidden");
     assert.equal((await tx`select id from public.daily_report_photos`).length, 0, "colleague photo hidden");
     assert.equal(
@@ -78,7 +80,8 @@ try {
     await tx.unsafe("reset role");
     await tx`insert into public.attendance_days(organization_id,employee_id,work_date,branch_id,policy_id,calendar_context,check_in_at) values(${org.id},${eb.id},(now() at time zone 'Asia/Kolkata')::date,${branch.id},${policy.id},'working_day',now()-interval '450 minutes')`;
     await tx.unsafe("set local role authenticated");
-    const [punched] = await tx`select public.record_attendance_punch('check_out',${randomUUID()}) as value`;
+    const [punched] =
+      await tx`select public.record_attendance_punch('check_out',${randomUUID()},${sql.json(testLocation())}) as value`;
     assert.equal(
       punched.value.duration_minutes,
       450,
@@ -93,7 +96,7 @@ try {
     assert.equal(dashboard.value.today.durationMinutes, 450, "completed shift total in dashboard");
     await tx.unsafe("reset role");
     await tx`update public.profiles set password_change_required=true where user_id=${a}`;
-    await tx`select set_config('request.jwt.claim.sub',${a},true)`;
+    await setTestIdentity(tx, a);
     await tx.unsafe("set local role authenticated");
     assert.equal((await tx`select id from public.daily_work_reports`).length, 0, "onboarding report access blocked");
     await rejected((sp) => sp`select public.save_daily_report('Bypass')`, "onboarding cannot write summary");

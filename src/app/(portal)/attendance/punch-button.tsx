@@ -2,6 +2,7 @@
 
 import { LogIn, LogOut } from "lucide-react";
 import { useRef, useState, useTransition } from "react";
+import { capturePunchLocation } from "@/modules/attendance/location";
 import { punch } from "./actions";
 
 export function PunchButton({ canCheckIn, canCheckOut }: { canCheckIn: boolean; canCheckOut: boolean }) {
@@ -26,11 +27,15 @@ export function PunchButton({ canCheckIn, canCheckOut }: { canCheckIn: boolean; 
           start(async () => {
             if (request.current?.kind !== kind) request.current = { kind, id: crypto.randomUUID() };
             try {
-              const result = await punch(kind, request.current.id);
+              setMessage("Getting your location…");
+              const location = await capturePunchLocation();
+              const result = await punch(kind, request.current.id, location);
               setMessage(result.error ?? result.success ?? "");
               if (result.success) request.current = null;
-            } catch {
-              setMessage("Could not confirm attendance. Refresh to check your saved status before retrying.");
+            } catch (error) {
+              setMessage(
+                error instanceof Error ? error.message : "Could not confirm attendance. Refresh before retrying.",
+              );
             }
           })
         }
@@ -38,6 +43,9 @@ export function PunchButton({ canCheckIn, canCheckOut }: { canCheckIn: boolean; 
         <Icon size={18} />
         {pending ? "Saving…" : kind === "check_in" ? "Check in now" : "Check out now"}
       </button>
+      <p className="stat-note" style={{ color: "#c7d4dd" }}>
+        Your location is recorded with each check-in and check-out.
+      </p>
       {message && <StatusText>{message}</StatusText>}
     </div>
   );

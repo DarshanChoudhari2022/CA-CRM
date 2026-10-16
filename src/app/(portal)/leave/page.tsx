@@ -34,7 +34,7 @@ export default async function LeavePage() {
         ))}
       </section>
       <section className="section grid grid-2">
-        <LeaveForm types={data.types} />
+        <LeaveForm types={data.types} joinedOn={identity.joinedOn} />
         <div className="card">
           <div className="section-title">
             <h2>My requests</h2>

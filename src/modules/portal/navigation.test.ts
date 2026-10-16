@@ -22,6 +22,8 @@ describe("separate workspace navigation", () => {
     expect(workspaceNavigation("attendance", "employee").some((l) => l.href === "/employees")).toBe(false);
     expect(workspaceNavigation("attendance", "manager").some((l) => l.href === "/approvals")).toBe(true);
     expect(workspaceNavigation("crm", "employee").some((l) => l.href === "/crm/automations")).toBe(false);
+    expect(workspaceNavigation("crm", "employee").some((l) => l.href === "/crm/invoices")).toBe(false);
+    expect(workspaceNavigation("crm", "admin").some((l) => l.href === "/crm/invoices")).toBe(true);
   });
   it("classifies the actual route, not similarly named pages", () => {
     expect(workspaceForPath("/crm/automations")).toBe("crm");

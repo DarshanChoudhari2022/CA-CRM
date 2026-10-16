@@ -1,9 +1,10 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { PageHead } from "@/components/page-head";
 import { createClient } from "@/lib/supabase/server";
 import { type CrmOption, type CrmRecord, crmModules, isCrmModule } from "@/modules/crm/config";
 import type { DocumentVersion } from "@/modules/crm/documents";
+import { canUseCrmModule } from "@/modules/identity/access";
 import { requireIdentity } from "@/modules/identity/session";
 import { SupportTools } from "../support-tools";
 import { DocumentUpload } from "./document-upload";
@@ -19,6 +20,7 @@ export default async function CrmPage({
   const { module } = await params;
   if (!isCrmModule(module)) notFound();
   const identity = await requireIdentity();
+  if (!canUseCrmModule(identity.role, module)) redirect("/crm");
   const admin = ["admin", "partner"].includes(identity.role);
   const client = await createClient();
   const filters = await searchParams;
@@ -124,6 +126,21 @@ export default async function CrmPage({
               <p>
                 INR {item.amount} · Received INR {receivedAmounts.get(item.id) ?? 0}
               </p>
+            )}
+            {module === "invoices" && admin && (
+              <form action={`/crm/invoices/${item.id}/pdf`} method="get" className="filters">
+                <select
+                  name="template"
+                  aria-label={`PDF design for ${item.title}`}
+                  defaultValue={item.invoice_details?.template ?? "modern"}
+                >
+                  <option value="modern">Green invoice - Template 2</option>
+                  <option value="classic">Classic bordered - Template 1</option>
+                </select>
+                <button className="button button-secondary" type="submit">
+                  Generate invoice PDF
+                </button>
+              </form>
             )}
             {(admin || !["clients", "leads", "invoices"].includes(module)) && (
               <RecordEditor module={module} item={item} clients={options} employees={people} admin={admin} />

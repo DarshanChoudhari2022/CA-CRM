@@ -1,10 +1,26 @@
 "use client";
 
 import { useActionState } from "react";
-import { submitLeave } from "./actions";
+import { deliverLeaveEmail } from "@/modules/leave/email-delivery";
+import { finishLeaveEmail, type LeaveState, submitLeave } from "./actions";
 
-export function LeaveForm({ types }: { types: Array<{ id: string; name: string }> }) {
-  const [state, action, pending] = useActionState(submitLeave, {});
+export function LeaveForm({ types, joinedOn }: { types: Array<{ id: string; name: string }>; joinedOn?: string }) {
+  const [state, action, pending] = useActionState(async (previous: LeaveState, form: FormData): Promise<LeaveState> => {
+    const result = await submitLeave(previous, form);
+    if (!result.success) return result;
+    if (!result.notification)
+      return { success: `${result.success} Office email is queued until email setup is complete.` };
+    const outcome = await deliverLeaveEmail(result.notification);
+    let saved = false;
+    try {
+      saved = await finishLeaveEmail(result.notification.id, result.notification.lease, outcome);
+    } catch {
+      /* Request remains saved. */
+    }
+    return {
+      success: `${result.success} ${outcome === "sent" && saved ? "Office notification accepted for delivery." : "Email delivery could not be confirmed. Your leave request is saved."}`,
+    };
+  }, {});
   return (
     <form action={action} className="card">
       <div className="section-title">
@@ -34,11 +50,11 @@ export function LeaveForm({ types }: { types: Array<{ id: string; name: string }
       <div className="grid grid-2">
         <div className="field">
           <label htmlFor="startDate">From</label>
-          <input id="startDate" name="startDate" type="date" required />
+          <input id="startDate" name="startDate" type="date" min={joinedOn} required />
         </div>
         <div className="field">
           <label htmlFor="endDate">To</label>
-          <input id="endDate" name="endDate" type="date" required />
+          <input id="endDate" name="endDate" type="date" min={joinedOn} required />
         </div>
       </div>
       <div className="field">

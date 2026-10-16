@@ -3,11 +3,13 @@ import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import postgres from "postgres";
 import { testDatabaseOptions } from "./test-database-options.mjs";
+import { prepareAccessTest, setTestIdentity } from "./test-session.mjs";
 
 const sql = postgres(process.env.SUPABASE_DB_URL, testDatabaseOptions());
 const rollback = new Error("rollback automation fixtures");
 try {
   await sql.begin(async (tx) => {
+    await prepareAccessTest(tx);
     const version = "20261013150000";
     const [installed] = await tx`select version from supabase_migrations.schema_migrations where version=${version}`;
     if (!installed)
@@ -24,7 +26,7 @@ try {
       await tx`insert into auth.users(id,email,encrypted_password) values(${id},${`${id}@example.invalid`},'fixture')`;
       await tx`insert into public.profiles(user_id,organization_id,full_name,role) values(${id},${org.id},'Fixture',${role})`;
     }
-    await tx`select set_config('request.jwt.claim.sub',${admin},true)`;
+    await setTestIdentity(tx, admin);
     await tx.unsafe("set local role authenticated");
     await tx`select public.crm_automation_config(true,false,'Approved office contact information')`;
     await tx`select public.crm_channel_permission('gmail','client@example.invalid',true,'Test fixture consent')`;
@@ -44,7 +46,7 @@ try {
     assert.equal(repeat.n, 0, "Repeated schedules do not duplicate messages");
     const [msg] = await tx`select * from public.crm_dispatch where organization_id=${org.id}`;
     assert.equal(msg.status, "review", "New org never starts sending automatically");
-    await tx`select set_config('request.jwt.claim.sub',${employee},true)`;
+    await setTestIdentity(tx, employee);
     await tx.unsafe("set local role authenticated");
     assert.equal(
       (await tx`select * from public.crm_dispatch where organization_id=${org.id}`).length,
@@ -59,7 +61,7 @@ try {
     }
     assert.ok(denied, "Employee cannot approve dispatch");
     await tx.unsafe("reset role");
-    await tx`select set_config('request.jwt.claim.sub',${admin},true)`;
+    await setTestIdentity(tx, admin);
     await tx`select public.crm_dispatch_review(${msg.id},true,'Reviewed message')`;
     const payment = { invoice_id: invoice.id, amount: 40 };
     const [partial] =

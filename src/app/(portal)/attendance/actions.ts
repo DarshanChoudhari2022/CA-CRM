@@ -3,14 +3,26 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { formatWorkedMinutes } from "@/modules/attendance/duration";
+import { locationIsFresh, punchLocationSchema } from "@/modules/attendance/location";
 import { requireIdentity } from "@/modules/identity/session";
 
 export type ActionState = { error?: string; success?: string };
 
-export async function punch(kind: "check_in" | "check_out", requestId: string): Promise<ActionState> {
+export async function punch(
+  kind: "check_in" | "check_out",
+  requestId: string,
+  location: unknown,
+): Promise<ActionState> {
   await requireIdentity();
+  const parsed = punchLocationSchema.safeParse(location);
+  if (!parsed.success || !locationIsFresh(parsed.data))
+    return { error: "A current location is required. Please retry." };
   const supabase = await createClient();
-  const { data, error } = await supabase.rpc("record_attendance_punch", { p_kind: kind, p_request_id: requestId });
+  const { data, error } = await supabase.rpc("record_attendance_punch", {
+    p_kind: kind,
+    p_request_id: requestId,
+    p_location: parsed.data,
+  });
   if (error) return { error: error.message };
   revalidatePath("/dashboard");
   revalidatePath("/attendance");

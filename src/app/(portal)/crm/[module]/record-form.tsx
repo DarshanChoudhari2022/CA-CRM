@@ -2,6 +2,7 @@
 import { type ComponentProps, useActionState, useState } from "react";
 import { type CrmModule, type CrmOption, type CrmRecord, crmModules } from "@/modules/crm/config";
 import { convertLead, recordPayment, saveRecord } from "./actions";
+import { InvoiceFields } from "./invoice-fields";
 
 export function RecordEditor(props: ComponentProps<typeof RecordForm>) {
   const [visited, setVisited] = useState(false);
@@ -37,6 +38,7 @@ export function RecordForm({
   const config = crmModules[module];
   const [state, action, pending] = useActionState(saveRecord, {});
   const suffix = item?.id ?? "new";
+  const billingLocked = module === "invoices" && Boolean(item && item.status !== "draft");
   return (
     <form action={action} className="card">
       <h2>{item ? "Edit record" : "Add record"}</h2>
@@ -50,7 +52,14 @@ export function RecordForm({
       {state.success && <p role="status">{state.success}</p>}
       <div className="field">
         <label htmlFor={`title-${suffix}`}>Name / reference</label>
-        <input id={`title-${suffix}`} name="title" defaultValue={item?.title} maxLength={200} required />
+        <input
+          id={`title-${suffix}`}
+          name="title"
+          defaultValue={item?.title}
+          maxLength={200}
+          required
+          readOnly={billingLocked}
+        />
       </div>
       <div className="grid grid-2">
         <div className="field">
@@ -90,6 +99,7 @@ export function RecordForm({
               id={`client-${suffix}`}
               name="client_id"
               required={config.amount}
+              disabled={billingLocked}
               defaultValue={item?.client_id ?? ""}
             >
               <option value="">Select client</option>
@@ -102,6 +112,7 @@ export function RecordForm({
           ) : (
             <input name="client_id" type="hidden" value={item?.client_id ?? ""} />
           )}
+          {admin && billingLocked && <input name="client_id" type="hidden" value={item?.client_id ?? ""} />}
         </div>
       )}
       {config.contacts && (
@@ -128,20 +139,7 @@ export function RecordForm({
           />
         </div>
       )}
-      {config.amount && (
-        <div className="field">
-          <label htmlFor={`amount-${suffix}`}>Amount (INR)</label>
-          <input
-            id={`amount-${suffix}`}
-            name="amount"
-            type="number"
-            step="0.01"
-            min="0.01"
-            defaultValue={item?.amount}
-            required
-          />
-        </div>
-      )}
+      {config.amount && <InvoiceFields item={item} />}
       <div className="field">
         <label htmlFor={`notes-${suffix}`}>{module === "support" ? "Query / draft reply / resolution" : "Notes"}</label>
         <textarea id={`notes-${suffix}`} name="notes" defaultValue={item?.notes} maxLength={4000} />

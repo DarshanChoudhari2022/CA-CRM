@@ -91,9 +91,7 @@ export function OperationForm({
               Role
               <select name="role" defaultValue={employee?.role ?? "employee"}>
                 <option value="employee">Employee</option>
-                <option value="manager">Manager</option>
                 <option value="admin">Administrator</option>
-                <option value="partner">Partner</option>
               </select>
             </label>
           </div>
