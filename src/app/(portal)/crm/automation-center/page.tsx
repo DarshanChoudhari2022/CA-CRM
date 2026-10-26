@@ -131,7 +131,12 @@ export default async function AutomationCenter({
           Worker configuration:{" "}
           {process.env.CRON_SECRET && process.env.CRM_AUTOMATION_ORGANIZATION_ID ? "Present" : "Required"}. Gmail
           intake: {process.env.GMAIL_INTAKE_LABEL_ID ? "Label configured" : "Label required"}. WhatsApp verification:{" "}
-          {process.env.WHATSAPP_APP_SECRET && process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN ? "Configured" : "Required"}.
+          {process.env.WHATSAPP_PROVIDER === "authkey"
+            ? "Authkey demo: reviewed outbound leave updates only; inbound and receipts pending"
+            : process.env.WHATSAPP_APP_SECRET && process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN
+              ? "Configured"
+              : "Required"}
+          .
         </p>
         <form action={configure} className="section">
           <input type="hidden" name="kind" value="settings" />

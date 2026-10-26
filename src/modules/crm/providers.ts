@@ -1,3 +1,6 @@
+import { authkeyReady, type LeaveTemplate, sendAuthkeyLeave, whatsappProvider } from "./authkey";
+import { GmailProviderError, gmailAccessToken, gmailRequest } from "./gmail-connection";
+
 // Imported only by server actions. Never expose provider credentials to browser code.
 function required(name: string) {
   const value = process.env[name];
@@ -9,13 +12,17 @@ export function integrationStatus() {
   return {
     Groq: configured(["GROQ_API_KEY", "GROQ_MODEL"]),
     Gmail: configured(["GMAIL_CLIENT_ID", "GMAIL_CLIENT_SECRET", "GMAIL_REFRESH_TOKEN", "GMAIL_SENDER"]),
-    WhatsApp: configured([
-      "WHATSAPP_ACCESS_TOKEN",
-      "WHATSAPP_PHONE_NUMBER_ID",
-      "WHATSAPP_GRAPH_VERSION",
-      "WHATSAPP_TEMPLATE_NAME",
-      "WHATSAPP_TEMPLATE_LANGUAGE",
-    ]),
+    WhatsApp:
+      whatsappProvider() === "authkey"
+        ? authkeyReady()
+        : whatsappProvider() === "meta" &&
+          configured([
+            "WHATSAPP_ACCESS_TOKEN",
+            "WHATSAPP_PHONE_NUMBER_ID",
+            "WHATSAPP_GRAPH_VERSION",
+            "WHATSAPP_TEMPLATE_NAME",
+            "WHATSAPP_TEMPLATE_LANGUAGE",
+          ]),
   };
 }
 async function jsonRequest(url: string, init: RequestInit) {
@@ -45,17 +52,7 @@ export async function draftReply(title: string, notes: string): Promise<string> 
   return content.slice(0, 4000);
 }
 export async function sendGmail(recipient: string, subject: string, body: string): Promise<string> {
-  const token = await jsonRequest("https://oauth2.googleapis.com/token", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      client_id: required("GMAIL_CLIENT_ID"),
-      client_secret: required("GMAIL_CLIENT_SECRET"),
-      refresh_token: required("GMAIL_REFRESH_TOKEN"),
-      grant_type: "refresh_token",
-    }),
-  });
-  if (typeof token.access_token !== "string") throw new Error("Gmail authorization failed.");
+  const token = await gmailAccessToken();
   const sender = required("GMAIL_SENDER");
   if (/[\r\n]/.test(sender + recipient + subject)) throw new Error("Invalid email headers.");
   const mime = [
@@ -71,15 +68,25 @@ export async function sendGmail(recipient: string, subject: string, body: string
       .match(/.{1,76}/g)
       ?.join("\r\n") ?? "",
   ].join("\r\n");
-  const result = await jsonRequest("https://gmail.googleapis.com/gmail/v1/users/me/messages/send", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token.access_token}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ raw: Buffer.from(mime).toString("base64url") }),
-  });
-  if (typeof result.id !== "string") throw new Error("Gmail acceptance could not be confirmed.");
+  const result = await gmailRequest(
+    "https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
+    {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ raw: Buffer.from(mime).toString("base64url") }),
+    },
+    "send",
+  );
+  if (typeof result.id !== "string")
+    throw new GmailProviderError("Gmail acceptance could not be confirmed. Check Gmail Sent before resending.");
   return result.id;
 }
-export async function sendWhatsApp(recipient: string, body: string): Promise<string> {
+export async function sendWhatsApp(recipient: string, body: string, leave?: LeaveTemplate): Promise<string> {
+  if (whatsappProvider() === "authkey") {
+    if (!leave) throw new Error("Authkey requires a reviewed leave template; general messages are unavailable.");
+    return sendAuthkeyLeave(recipient, leave);
+  }
+  if (whatsappProvider() !== "meta") throw new Error("Invalid WhatsApp provider.");
   const version = required("WHATSAPP_GRAPH_VERSION");
   const phone = required("WHATSAPP_PHONE_NUMBER_ID");
   if (!/^v\d+\.\d+$/.test(version) || !/^\d+$/.test(phone)) throw new Error("Invalid WhatsApp configuration.");

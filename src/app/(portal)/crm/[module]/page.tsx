@@ -185,7 +185,9 @@ export default async function CrmPage({
               <RecordEditor module={module} item={item} clients={options} employees={people} admin={admin} />
             )}
             {module === "leads" && admin && !item.client_id && <ConvertButton id={item.id} />}
-            {module === "support" && <SupportTools id={item.id} admin={admin} />}
+            {module === "support" && (
+              <SupportTools id={item.id} admin={admin} authkey={process.env.WHATSAPP_PROVIDER === "authkey"} />
+            )}
             {module === "documents" && (
               <DocumentUpload
                 id={item.id}
