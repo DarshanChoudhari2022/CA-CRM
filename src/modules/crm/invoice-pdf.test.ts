@@ -1,8 +1,11 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { PDFDocument } from "pdf-lib";
-import { expect, it } from "vitest";
+import QRCode from "qrcode";
+import { afterEach, expect, it, vi } from "vitest";
 import { defaultInvoiceDetails, invoiceTotals } from "./invoice-details";
 import { generateInvoicePdf } from "./invoice-pdf";
+
+afterEach(() => vi.restoreAllMocks());
 
 it("generates a valid paginated PDF for long notes and unsupported glyphs", async () => {
   const bytes = await generateInvoicePdf({
@@ -109,6 +112,7 @@ it("continues large item lists onto further template pages and rejects inconsist
 });
 
 it("generates a balance-specific payment QR and keeps fully paid invoices marked paid", async () => {
+  const qr = vi.spyOn(QRCode, "toBuffer");
   const invoice = {
     number: "BALANCE-TEST",
     title: "Bookkeeping",
@@ -120,7 +124,20 @@ it("generates a balance-specific payment QR and keeps fully paid invoices marked
     notes: "",
   };
   const partial = await generateInvoicePdf(invoice);
+  expect(qr).toHaveBeenCalledTimes(1);
+  const payment = new URL(String(qr.mock.calls[0][0]));
+  expect(payment.protocol).toBe("upi:");
+  expect(payment.hostname).toBe("pay");
+  expect(Object.fromEntries(payment.searchParams)).toEqual({
+    pa: "PSBA@ICICI",
+    pn: "P S B & ASSOCIATES LLP",
+    am: "8000.00",
+    cu: "INR",
+    tn: "BALANCE-TEST",
+  });
+  qr.mockClear();
   const paid = await generateInvoicePdf({ ...invoice, received: 10000 });
+  expect(qr).not.toHaveBeenCalled();
   expect((await PDFDocument.load(partial)).getPageCount()).toBe(1);
   expect((await PDFDocument.load(paid)).getPageCount()).toBe(1);
   if (process.env.INVOICE_RENDER_PREVIEWS === "1") {
@@ -128,4 +145,30 @@ it("generates a balance-specific payment QR and keeps fully paid invoices marked
     await writeFile("tmp/pdfs/invoice-templates/partial-payment.pdf", partial);
     await writeFile("tmp/pdfs/invoice-templates/fully-paid.pdf", paid);
   }
+});
+
+it.each([
+  ["draft", "invoice", 0],
+  ["void", "invoice", 0],
+  ["issued", "quotation", 0],
+  ["draft", "quotation", 0],
+  ["issued", "invoice", 100],
+  ["issued", "invoice", 110],
+] as const)("does not generate a payment QR for %s %s with received %s", async (status, documentType, received) => {
+  const qr = vi.spyOn(QRCode, "toBuffer");
+  const details = defaultInvoiceDetails("Services", 100, "2026-10-26");
+  details.documentType = documentType;
+  const bytes = await generateInvoicePdf({
+    number: "NO-PAYMENT",
+    title: "Services",
+    status,
+    createdAt: details.invoiceDate,
+    client: { title: "Test client" },
+    amount: 100,
+    received,
+    notes: "",
+    details,
+  });
+  expect((await PDFDocument.load(bytes)).getPageCount()).toBe(1);
+  expect(qr).not.toHaveBeenCalled();
 });

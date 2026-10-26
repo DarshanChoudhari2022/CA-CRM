@@ -51,6 +51,12 @@ jobs:
       - run: node scripts/test-quality-db.mjs
       - run: node scripts/test-leave-reporting-db.mjs
       - run: node scripts/test-automation-db.mjs
+      - run: node scripts/test-collection-integrity-db.mjs
+      - run: node scripts/test-reminder-readiness-db.mjs
+      - name: Verify payment precision against PostgreSQL
+        run: npx vitest run 'src/app/(portal)/crm/[module]/actions.test.ts'
+        env:
+          INVOICE_PAYMENT_DB_TEST: "1"
       - run: node scripts/test-access-location-db.mjs
       - run: node scripts/test-invoice-templates-db.mjs
       - run: node scripts/test-attendance-concurrency-db.mjs

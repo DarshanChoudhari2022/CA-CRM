@@ -49,7 +49,7 @@ export function SupportTools({ id, admin, authkey = false }: { id: string; admin
           <input type="hidden" name="requestId" value={requestId} />
           <label>
             Channel
-            <select name="channel" onChange={(event) => setChannel(event.target.value)}>
+            <select name="channel" value={channel} onChange={(event) => setChannel(event.target.value)}>
               <option value="gmail">Gmail</option>
               <option value="whatsapp">WhatsApp approved template</option>
             </select>

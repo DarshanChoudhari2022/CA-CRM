@@ -97,6 +97,31 @@ try {
       "Leased enquiry cannot be claimed twice",
     );
     await tx`select public.crm_finish_inbound(${claim.id},${claim.lease},'A CA will review your question.','needs_review')`;
+    const websiteArgs = [
+      org.id,
+      "website",
+      "website-demo-id",
+      "prospect@example.invalid",
+      "Demo company",
+      "Bookkeeping for a company starting next month.",
+    ];
+    const [website] =
+      await tx`select public.crm_ingest(${websiteArgs[0]},${websiteArgs[1]},${websiteArgs[2]},${websiteArgs[3]},${websiteArgs[4]},${websiteArgs[5]}) as id`;
+    const [websiteAgain] =
+      await tx`select public.crm_ingest(${websiteArgs[0]},${websiteArgs[1]},${websiteArgs[2]},${websiteArgs[3]},${websiteArgs[4]},${websiteArgs[5]}) as id`;
+    assert.equal(website.id, websiteAgain.id, "Website retries do not create duplicate enquiries");
+    const [websiteClaim] = await tx`select * from public.crm_claim_inbound(${org.id})`;
+    assert.equal(websiteClaim.id, website.id);
+    await tx`select public.crm_finish_inbound(${websiteClaim.id},${websiteClaim.lease},'Our team will discuss your bookkeeping requirements.','qualified')`;
+    const [qualified] = await tx`select status from public.crm_leads where id=${websiteClaim.lead_id}`;
+    assert.equal(qualified.status, "qualified", "Website qualification advances the linked lead");
+    const [review] =
+      await tx`select status,recipient from public.crm_dispatch where source_module='inbound' and source_id=${website.id}`;
+    assert.equal(review.status, "review", "Qualified leads still require staff review before replying");
+    assert.equal(review.recipient, "prospect@example.invalid");
+    const [engagement] = await tx`select public.crm_convert_lead(${websiteClaim.lead_id}) as id`;
+    const [engagementAgain] = await tx`select public.crm_convert_lead(${websiteClaim.lead_id}) as id`;
+    assert.equal(engagement.id, engagementAgain.id, "Qualified website lead converts to one client");
     const docsPayload = { client_id: client.id, documents: [{ title: "Bank statement" }] };
     const [docRequest] =
       await tx`select public.crm_external_update(${org.id},'doc-request','documents',${sql.json(docsPayload)}) as result`;
