@@ -1,6 +1,6 @@
 "use client";
 import { useActionState, useState } from "react";
-import { checkGmailConnection, supportDraft, supportSend } from "./support-actions";
+import { checkAuthkeyConnection, checkGmailConnection, supportDraft, supportSend } from "./support-actions";
 export function SupportTools({ id, admin, authkey = false }: { id: string; admin: boolean; authkey?: boolean }) {
   const [channel, setChannel] = useState("gmail");
   const leave = authkey && channel === "whatsapp";
@@ -8,9 +8,19 @@ export function SupportTools({ id, admin, authkey = false }: { id: string; admin
   const [sent, sendAction, sending] = useActionState(supportSend, {});
   const [requestId] = useState(() => crypto.randomUUID());
   const [connection, checkConnection, checking] = useActionState(checkGmailConnection, {});
+  const [authkeyConnection, checkAuthkey, checkingAuthkey] = useActionState(checkAuthkeyConnection, {});
   return (
     <details>
       <summary>AI draft & messaging</summary>
+      {admin && authkey && (
+        <form action={checkAuthkey}>
+          <button className="button button-secondary" disabled={checkingAuthkey} type="submit">
+            {checkingAuthkey ? "Checking Authkey…" : "Check Authkey connection"}
+          </button>
+          {authkeyConnection.error && <p role="alert">{authkeyConnection.error}</p>}
+          {authkeyConnection.success && <p role="status">{authkeyConnection.success}</p>}
+        </form>
+      )}
       {admin && (
         <form action={checkConnection}>
           <button className="button button-secondary" disabled={checking} type="submit">

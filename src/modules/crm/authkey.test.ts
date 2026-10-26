@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { leaveTemplateText } from "./authkey";
+import { leaveTemplateText, verifyAuthkeyConnection } from "./authkey";
 import { integrationStatus, sendWhatsApp } from "./providers";
 
 afterEach(() => {
@@ -17,6 +17,31 @@ function setup() {
   return fetch;
 }
 describe("Authkey leave demo", () => {
+  it("checks balance without sending a message", async () => {
+    const fetch = setup().mockResolvedValue(Response.json({ balance: 25.5 }));
+    await expect(verifyAuthkeyConnection()).resolves.toBe(25.5);
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(new URL(fetch.mock.calls[0][0]).pathname).toBe("/restapi/getbalance.php");
+    expect(fetch.mock.calls[0][1].body).toBeUndefined();
+  });
+  it("identifies negative balance", async () => {
+    setup().mockResolvedValue(Response.json({ Balance: -385.91 }));
+    await expect(verifyAuthkeyConnection()).rejects.toThrow("Authkey balance is -385.91");
+  });
+  it("reports invalid credentials without exposing the raw provider response", async () => {
+    setup().mockResolvedValue(new Response("Invalid authkey test-key", { status: 401 }));
+    await expect(verifyAuthkeyConnection()).rejects.toThrow("authentication failed");
+    setup().mockResolvedValue(new Response("Invalid authkey test-key", { status: 401 }));
+    await expect(verifyAuthkeyConnection()).rejects.not.toThrow("test-key");
+  });
+  it("does not mistake an unknown balance response for a verified connection", async () => {
+    setup().mockResolvedValue(Response.json({ success: true, other: "private" }));
+    await expect(verifyAuthkeyConnection()).rejects.toThrow("unrecognized balance response");
+  });
+  it("identifies explicit insufficient-credit rejection from the send API", async () => {
+    setup().mockResolvedValue(Response.json({ error: "Insufficient balance" }));
+    await expect(sendWhatsApp("+919999999999", "", leave)).rejects.toThrow("insufficient balance");
+  });
   it.each(["+919999999999", "919999999999", "9999999999"])(
     "normalizes %s and sends three template values",
     async (phone) => {
