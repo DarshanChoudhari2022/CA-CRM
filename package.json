@@ -22,12 +22,12 @@
     "@supabase/supabase-js": "2.117.3",
     "date-fns": "4.1.0",
     "lucide-react": "0.468.0",
-    "next": "16.4.0",
+    "next": "16.4.3",
     "pdf-lib": "^1.17.1",
     "qrcode": "^1.5.4",
     "react": "19.3.0",
     "react-dom": "19.3.0",
-    "zod": "4.6.5"
+    "zod": "4.6.7"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.15",
