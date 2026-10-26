@@ -1,15 +1,25 @@
 "use client";
 import { useActionState, useState } from "react";
-import { supportDraft, supportSend } from "./support-actions";
+import { checkGmailConnection, supportDraft, supportSend } from "./support-actions";
 export function SupportTools({ id, admin, authkey = false }: { id: string; admin: boolean; authkey?: boolean }) {
   const [channel, setChannel] = useState("gmail");
   const leave = authkey && channel === "whatsapp";
   const [draft, draftAction, drafting] = useActionState(supportDraft, {});
   const [sent, sendAction, sending] = useActionState(supportSend, {});
   const [requestId] = useState(() => crypto.randomUUID());
+  const [connection, checkConnection, checking] = useActionState(checkGmailConnection, {});
   return (
     <details>
       <summary>AI draft & messaging</summary>
+      {admin && (
+        <form action={checkConnection}>
+          <button className="button button-secondary" disabled={checking} type="submit">
+            {checking ? "Checking Gmail…" : "Check Gmail connection"}
+          </button>
+          {connection.error && <p role="alert">{connection.error}</p>}
+          {connection.success && <p role="status">{connection.success}</p>}
+        </form>
+      )}
       <form action={draftAction}>
         <input type="hidden" name="id" value={id} />
         <button className="button button-secondary" disabled={drafting} type="submit">

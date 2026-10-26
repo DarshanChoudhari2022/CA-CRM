@@ -1,4 +1,5 @@
 import { authkeyReady, type LeaveTemplate, sendAuthkeyLeave, whatsappProvider } from "./authkey";
+import { GmailProviderError, gmailAccessToken, gmailRequest } from "./gmail-connection";
 
 // Imported only by server actions. Never expose provider credentials to browser code.
 function required(name: string) {
@@ -51,17 +52,7 @@ export async function draftReply(title: string, notes: string): Promise<string> 
   return content.slice(0, 4000);
 }
 export async function sendGmail(recipient: string, subject: string, body: string): Promise<string> {
-  const token = await jsonRequest("https://oauth2.googleapis.com/token", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      client_id: required("GMAIL_CLIENT_ID"),
-      client_secret: required("GMAIL_CLIENT_SECRET"),
-      refresh_token: required("GMAIL_REFRESH_TOKEN"),
-      grant_type: "refresh_token",
-    }),
-  });
-  if (typeof token.access_token !== "string") throw new Error("Gmail authorization failed.");
+  const token = await gmailAccessToken();
   const sender = required("GMAIL_SENDER");
   if (/[\r\n]/.test(sender + recipient + subject)) throw new Error("Invalid email headers.");
   const mime = [
@@ -77,12 +68,17 @@ export async function sendGmail(recipient: string, subject: string, body: string
       .match(/.{1,76}/g)
       ?.join("\r\n") ?? "",
   ].join("\r\n");
-  const result = await jsonRequest("https://gmail.googleapis.com/gmail/v1/users/me/messages/send", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token.access_token}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ raw: Buffer.from(mime).toString("base64url") }),
-  });
-  if (typeof result.id !== "string") throw new Error("Gmail acceptance could not be confirmed.");
+  const result = await gmailRequest(
+    "https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
+    {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ raw: Buffer.from(mime).toString("base64url") }),
+    },
+    "send",
+  );
+  if (typeof result.id !== "string")
+    throw new GmailProviderError("Gmail acceptance could not be confirmed. Check Gmail Sent before resending.");
   return result.id;
 }
 export async function sendWhatsApp(recipient: string, body: string, leave?: LeaveTemplate): Promise<string> {
