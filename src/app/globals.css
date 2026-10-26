@@ -220,6 +220,64 @@ a {
   color: var(--red);
   border: 1px solid #ffc9c3;
 }
+.public-upload-page {
+  max-width: 600px;
+  margin: 8vh auto;
+  padding: 24px;
+}
+.public-upload-card {
+  padding: 28px;
+}
+.public-upload-form {
+  display: grid;
+  gap: 10px;
+  margin-top: 24px;
+}
+.public-upload-form label {
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 700;
+}
+.public-upload-form input[type="file"] {
+  width: 100%;
+  min-height: 48px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+}
+.public-upload-form input[type="file"]::file-selector-button {
+  margin-right: 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #f6f8fa;
+  color: var(--ink);
+  font: 600 14px var(--font-ui);
+  cursor: pointer;
+}
+.public-upload-actions {
+  display: flex;
+  margin-top: 8px;
+}
+.public-upload-actions .button {
+  min-width: 180px;
+}
+@media (max-width: 650px) {
+  .public-upload-page {
+    margin: 0 auto;
+    padding: 16px;
+  }
+  .public-upload-card {
+    padding: 22px 18px;
+  }
+  .public-upload-actions,
+  .public-upload-actions .button {
+    width: 100%;
+  }
+}
 .account-actions {
   display: grid;
   gap: 8px;
