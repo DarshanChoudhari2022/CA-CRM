@@ -3,6 +3,7 @@ import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { leaveTemplateSchema, leaveTemplateText, whatsappProvider } from "@/modules/crm/authkey";
 import { draftReply, integrationStatus, sendGmail, sendWhatsApp } from "@/modules/crm/providers";
 import { requireIdentity } from "@/modules/identity/session";
 
@@ -44,6 +45,17 @@ export async function supportSend(_: Result, form: FormData): Promise<Result> {
     .safeParse(Object.fromEntries(form));
   if (!parsed.success) return { error: "Review all fields and confirm permission to contact the recipient." };
   const v = parsed.data;
+  const authkey = v.channel === "whatsapp" && whatsappProvider() === "authkey";
+  const template = authkey
+    ? leaveTemplateSchema.safeParse({
+        name: form.get("leaveName"),
+        dates: form.get("leaveDates"),
+        status: form.get("leaveStatus"),
+      })
+    : undefined;
+  if (authkey && !template?.success) return { error: "Enter the employee name, leave dates and decision." };
+  const leave = template?.success ? template.data : undefined;
+  const messageBody = leave ? leaveTemplateText(leave) : v.body;
   if (v.channel === "gmail" ? !z.email().safeParse(v.recipient).success : !/^\+?[1-9]\d{7,14}$/.test(v.recipient))
     return { error: "Enter a valid email or international phone number." };
   const ready = integrationStatus();
@@ -52,19 +64,32 @@ export async function supportSend(_: Result, form: FormData): Promise<Result> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   if (!key || !url) return { error: "Server account configuration is missing." };
   const client = await createClient();
+  if (authkey) {
+    const permission = await client
+      .from("crm_channel_permissions")
+      .select("allowed")
+      .eq("organization_id", identity.organizationId)
+      .eq("channel", "whatsapp")
+      .eq("recipient", v.recipient)
+      .maybeSingle();
+    if (permission.error || !permission.data?.allowed)
+      return { error: "Save WhatsApp recipient permission in Automation Centre first." };
+  }
   const { error } = await client.rpc("crm_reserve_send", {
     p_id: v.requestId,
     p_source: v.id,
     p_channel: v.channel,
     p_recipient: v.recipient,
     p_subject: v.subject,
-    p_body: v.body,
+    p_body: messageBody,
   });
   if (error) return { error: error.message };
   const admin = createAdminClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
   try {
     const providerId =
-      v.channel === "gmail" ? await sendGmail(v.recipient, v.subject, v.body) : await sendWhatsApp(v.recipient, v.body);
+      v.channel === "gmail"
+        ? await sendGmail(v.recipient, v.subject, messageBody)
+        : await sendWhatsApp(v.recipient, messageBody, leave);
     const update = await admin
       .from("crm_outbox")
       .update({ status: "accepted", provider_id: providerId, updated_at: new Date().toISOString() })

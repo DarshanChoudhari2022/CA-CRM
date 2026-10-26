@@ -1,3 +1,5 @@
+import { authkeyReady, type LeaveTemplate, sendAuthkeyLeave, whatsappProvider } from "./authkey";
+
 // Imported only by server actions. Never expose provider credentials to browser code.
 function required(name: string) {
   const value = process.env[name];
@@ -9,13 +11,17 @@ export function integrationStatus() {
   return {
     Groq: configured(["GROQ_API_KEY", "GROQ_MODEL"]),
     Gmail: configured(["GMAIL_CLIENT_ID", "GMAIL_CLIENT_SECRET", "GMAIL_REFRESH_TOKEN", "GMAIL_SENDER"]),
-    WhatsApp: configured([
-      "WHATSAPP_ACCESS_TOKEN",
-      "WHATSAPP_PHONE_NUMBER_ID",
-      "WHATSAPP_GRAPH_VERSION",
-      "WHATSAPP_TEMPLATE_NAME",
-      "WHATSAPP_TEMPLATE_LANGUAGE",
-    ]),
+    WhatsApp:
+      whatsappProvider() === "authkey"
+        ? authkeyReady()
+        : whatsappProvider() === "meta" &&
+          configured([
+            "WHATSAPP_ACCESS_TOKEN",
+            "WHATSAPP_PHONE_NUMBER_ID",
+            "WHATSAPP_GRAPH_VERSION",
+            "WHATSAPP_TEMPLATE_NAME",
+            "WHATSAPP_TEMPLATE_LANGUAGE",
+          ]),
   };
 }
 async function jsonRequest(url: string, init: RequestInit) {
@@ -79,7 +85,12 @@ export async function sendGmail(recipient: string, subject: string, body: string
   if (typeof result.id !== "string") throw new Error("Gmail acceptance could not be confirmed.");
   return result.id;
 }
-export async function sendWhatsApp(recipient: string, body: string): Promise<string> {
+export async function sendWhatsApp(recipient: string, body: string, leave?: LeaveTemplate): Promise<string> {
+  if (whatsappProvider() === "authkey") {
+    if (!leave) throw new Error("Authkey requires a reviewed leave template; general messages are unavailable.");
+    return sendAuthkeyLeave(recipient, leave);
+  }
+  if (whatsappProvider() !== "meta") throw new Error("Invalid WhatsApp provider.");
   const version = required("WHATSAPP_GRAPH_VERSION");
   const phone = required("WHATSAPP_PHONE_NUMBER_ID");
   if (!/^v\d+\.\d+$/.test(version) || !/^\d+$/.test(phone)) throw new Error("Invalid WhatsApp configuration.");

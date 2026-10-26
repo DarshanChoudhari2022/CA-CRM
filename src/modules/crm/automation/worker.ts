@@ -1,3 +1,4 @@
+import { whatsappProvider } from "../authkey";
 import { integrationStatus, sendGmail, sendWhatsApp } from "../providers";
 import { answerEnquiry } from "./agent";
 import { createCollectionLink } from "./collection";
@@ -65,7 +66,7 @@ export async function runAutomation() {
   }
   const channels = [
     ...(ready.Gmail ? ["gmail"] : []),
-    ...(ready.WhatsApp ? ["whatsapp"] : []),
+    ...(ready.WhatsApp && whatsappProvider() === "meta" ? ["whatsapp"] : []),
     ...(process.env.TELEGRAM_PARTNER_CHAT_ID && process.env.TELEGRAM_BOT_TOKEN ? ["telegram"] : []),
   ];
   // Bounded batches fit serverless execution. Additional scheduler runs drain the queue.
