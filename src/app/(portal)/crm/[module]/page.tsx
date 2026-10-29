@@ -20,7 +20,7 @@ export default async function CrmPage({
   const { module } = await params;
   if (!isCrmModule(module)) notFound();
   const identity = await requireIdentity();
-  if (!canUseCrmModule(identity.role, module)) redirect("/crm");
+  if (!canUseCrmModule(identity.role, module)) redirect("/dashboard");
   const admin = ["admin", "partner"].includes(identity.role);
   const client = await createClient();
   const filters = await searchParams;

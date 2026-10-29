@@ -36,6 +36,14 @@ try {
   try {
     await sql.begin(async (tx) => {
       await prepareAccessTest(tx);
+      if (process.argv.includes("--preview-admin-only"))
+        await tx.unsafe(
+          await readFile(new URL("../supabase/migrations/20261029090000_admin_only_crm.sql", import.meta.url), "utf8"),
+        );
+      // Avoid non-transactional nextval changes during rollback-only verification.
+      await tx.unsafe(
+        "alter table public.crm_invoices alter column invoice_number set default ('TEST-'||gen_random_uuid()::text)",
+      );
       await tx.unsafe("set local time zone 'Asia/Kolkata'");
       await tx.unsafe("set local lock_timeout = '5s'");
       await tx.unsafe("set local statement_timeout = '30s'");

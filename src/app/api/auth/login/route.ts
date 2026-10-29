@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { isAdministrator } from "@/modules/identity/access";
 
 const credentials = z.object({
   email: z.string().trim().email().max(320),
@@ -44,6 +45,13 @@ export async function POST(request: NextRequest) {
   if (!profile?.active) {
     await supabase.auth.signOut();
     return NextResponse.json({ error: "This account does not have access to this portal." }, { status: 403 });
+  }
+  if (parsed.data.audience === "crm" && !isAdministrator(profile.role)) {
+    await supabase.auth.signOut();
+    return NextResponse.json(
+      { error: "CA CRM is available to administrators only. Use the employee login for Attendance." },
+      { status: 403 },
+    );
   }
   return NextResponse.json(
     {

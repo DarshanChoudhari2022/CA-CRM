@@ -77,7 +77,7 @@ export async function recordPayment(_: CrmState, form: FormData): Promise<CrmSta
   return { success: "Payment recorded." };
 }
 export async function convertLead(_: CrmState, form: FormData): Promise<CrmState> {
-  await requireIdentity();
+  if (!isAdministrator((await requireIdentity()).role)) return { error: "Administrator access required." };
   const id = z.uuid().safeParse(form.get("id"));
   if (!id.success) return { error: "Invalid lead." };
   const supabase = await createClient();

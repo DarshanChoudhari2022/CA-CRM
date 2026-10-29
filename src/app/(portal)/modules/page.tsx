@@ -1,7 +1,12 @@
 import { ArrowRight, CalendarCheck, Layers3 } from "lucide-react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { PageHead } from "@/components/page-head";
-export default function ModulesPage() {
+import { isAdministrator } from "@/modules/identity/access";
+import { requireIdentity } from "@/modules/identity/session";
+export default async function ModulesPage() {
+  const identity = await requireIdentity();
+  if (!isAdministrator(identity.role)) redirect("/dashboard");
   return (
     <>
       <PageHead

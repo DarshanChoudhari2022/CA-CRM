@@ -34,6 +34,7 @@ try {
     "20261026234000_collection_integrity",
     "20261026235000_reminder_reopening",
     "20261026235500_explicit_dispatch_cancellation",
+    "20261029090000_admin_only_crm",
   ]) {
     const version = name.split("_")[0];
     const source = await readFile(new URL(`../supabase/migrations/${name}.sql`, import.meta.url), "utf8");

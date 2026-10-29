@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
+import { readFile } from "node:fs/promises";
 import postgres from "postgres";
 import { testDatabaseOptions } from "./test-database-options.mjs";
 import { prepareAccessTest, setTestIdentity } from "./test-session.mjs";
@@ -9,6 +10,14 @@ const rollback = new Error("rollback CRM fixtures");
 try {
   await sql.begin(async (tx) => {
     await prepareAccessTest(tx);
+    if (process.argv.includes("--preview-admin-only"))
+      await tx.unsafe(
+        await readFile(new URL("../supabase/migrations/20261029090000_admin_only_crm.sql", import.meta.url), "utf8"),
+      );
+    // Avoid non-transactional nextval changes during rollback-only verification.
+    await tx.unsafe(
+      "alter table public.crm_invoices alter column invoice_number set default ('TEST-'||gen_random_uuid()::text)",
+    );
     await tx.unsafe("set local time zone 'Asia/Kolkata'");
     const admin = randomUUID(),
       member = randomUUID();
@@ -106,8 +115,8 @@ try {
     await tx.unsafe("set local role authenticated");
     assert.equal(
       (await tx`select id from public.crm_tasks`).length,
-      1,
-      "employee sees own tasks without inheriting direct-report tasks",
+      0,
+      "employee cannot read CRM tasks even when assigned",
     );
     await tx.unsafe("reset role");
     await tx`update public.profiles set role='admin' where user_id=${admin}`;
@@ -169,38 +178,17 @@ try {
       (sp) => sp`select public.ca_review_job(${workpaper.id},'approved','Unauthorized reviewer attempt.')`,
       "employee cannot approve workpaper",
     );
-    const [memberPaper] =
-      await tx`select public.ca_create_job('documentation','Employee evidence review','Review the assigned task using the supplied evidence.','India','Fixture period',${converted.id},${randomUUID()}) as id`;
-    await setTestIdentity(tx, admin);
     await rejected(
-      (sp) => sp`select public.ca_start_job(${memberPaper.id},${randomUUID()},'fixture-model','[]'::jsonb)`,
-      "administrator cannot widen employee evidence through generation",
+      (sp) =>
+        sp`select public.ca_create_job('documentation','Employee evidence review','Review the assigned task using the supplied evidence.','India','Fixture period',${converted.id},${randomUUID()})`,
+      "employee AI workpaper creation denied",
     );
-    await setTestIdentity(tx, member);
-    const memberLease = randomUUID();
-    const evidence = [{ id: `tasks:${ownTask}`, title: "Assigned task", content: "Own employee task evidence" }];
-    await tx`select public.ca_start_job(${memberPaper.id},${memberLease},'fixture-model',${sql.json(evidence)})`;
-    await tx.unsafe("reset role");
-    await tx`select public.ca_finish_job(${memberPaper.id},${org.id},${memberLease},${sql.json(draft)},null)`;
-    await tx.unsafe("set local role authenticated");
-    assert.equal(
-      (await tx`select id from public.ca_agent_jobs`).length,
-      1,
-      "creator sees own currently authorized evidence",
+    assert.equal((await tx`select id from public.crm_tasks`).length, 0, "assigned member has no CRM reads");
+    await rejected(
+      (sp) =>
+        sp`select public.crm_save('tasks',${ownTask},${sql.json({ title: "Assigned task", status: "done", owner_id: m.id })})`,
+      "assigned employee task update denied",
     );
-    await tx.unsafe("reset role");
-    await tx`update public.crm_tasks set owner_id=${a.id} where id=${ownTask}`;
-    await tx.unsafe("set local role authenticated");
-    assert.equal(
-      (await tx`select id from public.ca_agent_jobs`).length,
-      0,
-      "reassignment cannot leak through saved evidence",
-    );
-    await tx.unsafe("reset role");
-    await tx`update public.crm_tasks set owner_id=${m.id} where id=${ownTask}`;
-    await tx.unsafe("set local role authenticated");
-    assert.equal((await tx`select id from public.crm_tasks`).length, 1, "member sees only assigned tasks");
-    await tx`select public.crm_save('tasks',${ownTask},${sql.json({ title: "Assigned task", status: "done", owner_id: m.id })})`;
     await rejected(
       (sp) =>
         sp`select public.crm_save('tasks',null,${sql.json({ title: "Unauthorized creation", status: "todo", owner_id: m.id })})`,
@@ -225,7 +213,7 @@ try {
       "direct table writes denied",
     );
     console.log(
-      "Passed CRM database checks: organization isolation, assignment RLS, lead conversion idempotency, invoice immutability, duplicate/overpayment rejection, duplicate-send protection, employee restrictions, inactive access.",
+      "Passed CRM database checks: organization isolation, administrator-only RLS, lead conversion idempotency, invoice immutability, duplicate/overpayment rejection, duplicate-send protection, employee restrictions, inactive access.",
     );
     throw rollback;
   });

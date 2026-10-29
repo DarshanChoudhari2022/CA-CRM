@@ -4,7 +4,7 @@ import { PageHead } from "@/components/page-head";
 import { createClient } from "@/lib/supabase/server";
 import { type AgentJob, agentKinds } from "@/modules/ai/domain";
 import { integrationStatus } from "@/modules/crm/providers";
-import { requireIdentity } from "@/modules/identity/session";
+import { requireCrmIdentity as requireIdentity } from "@/modules/identity/crm";
 import { BriefForm, PrepareForm, ReferenceForm, ReferenceReview, ReviewForm } from "./forms";
 
 export default async function AiTeamPage({

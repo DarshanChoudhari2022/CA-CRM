@@ -51,7 +51,8 @@ export async function checkGmailConnection(): Promise<Result> {
   }
 }
 export async function supportDraft(_: Result, form: FormData): Promise<Result> {
-  await requireIdentity();
+  const identity = await requireIdentity();
+  if (!["admin", "partner"].includes(identity.role)) return { error: "Administrator required." };
   const id = z.uuid().safeParse(form.get("id"));
   if (!id.success) return { error: "Invalid ticket." };
   if (!integrationStatus().Groq) return { error: "Configure Groq in the server environment first." };

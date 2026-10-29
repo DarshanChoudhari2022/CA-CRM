@@ -21,6 +21,14 @@ try {
         await tx.unsafe(await readFile(new URL(`../supabase/migrations/${name}.sql`, import.meta.url), "utf8"));
     }
     console.log("Both migrations compile transactionally.");
+    if (process.argv.includes("--preview-admin-only"))
+      await tx.unsafe(
+        await readFile(new URL("../supabase/migrations/20261029090000_admin_only_crm.sql", import.meta.url), "utf8"),
+      );
+    // Avoid non-transactional nextval changes during rollback-only verification.
+    await tx.unsafe(
+      "alter table public.crm_invoices alter column invoice_number set default ('TEST-'||gen_random_uuid()::text)",
+    );
     const [org] =
       await tx`insert into public.organizations(name) values('Access regression rollback fixture') returning id`;
     const [otherOrg] =
@@ -89,9 +97,9 @@ try {
     await tx.unsafe("reset role");
     await tx`update auth.sessions set created_at=now() where id=${alice.session}`;
     await tx.unsafe("set local role authenticated");
-    assert.equal((await tx`select * from public.crm_clients`).length, 1);
+    assert.equal((await tx`select * from public.crm_clients`).length, 0);
     assert.equal((await tx`select * from public.crm_clients where id=${foreignClient.id}`).length, 0);
-    assert.equal((await tx`select * from public.crm_tasks where id=${task.id}`).length, 1);
+    assert.equal((await tx`select * from public.crm_tasks where id=${task.id}`).length, 0);
     assert.equal(
       (await tx`select * from public.crm_invoices where id=${invoice.id}`).length,
       0,
@@ -196,7 +204,11 @@ try {
       "reassignment removes child access immediately",
     );
     await as(bob);
-    assert.equal((await tx`select * from public.crm_tasks where id=${task.id}`).length, 1);
+    assert.equal(
+      (await tx`select * from public.crm_tasks where id=${task.id}`).length,
+      0,
+      "assignment never grants employee CRM access",
+    );
     await as(admin);
     await tx`select public.admin_employee_access(${bob.employee},'employee',false)`;
     await as(bob);

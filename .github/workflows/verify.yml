@@ -46,6 +46,7 @@ jobs:
       - run: node scripts/test-security-db.mjs
       - run: node scripts/test-attendance-integrity-db.mjs
       - run: node scripts/test-crm-db.mjs
+      - run: node scripts/test-crm-admin-only-db.mjs
       - run: node scripts/test-workspace-db.mjs
       - run: node scripts/test-daily-report-db.mjs
       - run: node scripts/test-quality-db.mjs
