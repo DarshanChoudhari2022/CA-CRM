@@ -1,12 +1,11 @@
 .invoice-workspace {
-  --billing-violet: #5545e9;
-  --billing-line: #e2e8e8;
-  --billing-ink: #172438;
-  --billing-muted: #526475;
+  --billing-line: var(--line);
+  --billing-ink: var(--ink);
+  --billing-muted: var(--muted);
   min-height: 100dvh;
   display: grid;
   grid-template-columns: 224px minmax(0, 1fr);
-  background: #f5f8f8;
+  background: var(--canvas);
   color: var(--billing-ink);
   font:
     14px / 1.48 "DM Sans",
@@ -20,8 +19,8 @@
   display: flex;
   flex-direction: column;
   padding: 16px 12px 12px;
-  background: #171c1e;
-  color: #e1e8e8;
+  background: var(--deep);
+  color: var(--white);
 }
 .invoice-workspace .billing-brand {
   display: block;
@@ -31,7 +30,7 @@
   color: #fff;
 }
 .invoice-workspace .billing-brand span {
-  color: #b3aaff;
+  color: var(--gold);
 }
 .invoice-workspace .billing-sidebar nav {
   display: grid;
@@ -50,25 +49,26 @@
   white-space: nowrap;
 }
 .invoice-workspace .billing-sidebar :where(nav) a:hover {
-  background: #2c3335;
+  background: var(--navy);
 }
 .invoice-workspace .billing-sidebar :where(nav) a[aria-current] {
-  background: var(--billing-violet);
-  color: #fff;
+  background: var(--navy);
+  box-shadow: inset 3px 0 var(--gold);
+  color: var(--white);
 }
 .invoice-workspace .billing-account {
   display: grid;
   gap: 4px;
   margin-top: auto;
   padding: 12px 10px 0;
-  border-top: 1px solid #394144;
+  border-top: 1px solid var(--ink-2);
 }
 .invoice-workspace .billing-account small {
-  color: #aebcbc;
+  color: var(--white);
 }
 .invoice-workspace .billing-account a,
 .invoice-workspace .billing-account button {
-  color: #ded8ff;
+  color: var(--gold);
   background: none;
   padding: 0;
   border: 0;
@@ -129,12 +129,15 @@
   font-weight: 650;
 }
 .invoice-workspace .billing-button:hover {
-  border-color: var(--billing-violet);
+  border-color: var(--gold-accent);
 }
 .invoice-workspace .billing-primary {
-  background: var(--billing-violet);
-  border-color: var(--billing-violet);
+  background: var(--navy);
+  border-color: var(--navy);
   color: #fff;
+}
+.invoice-workspace .billing-primary:hover {
+  background: var(--ink-2);
 }
 .invoice-workspace .billing-grid {
   display: grid;
@@ -159,19 +162,19 @@
   position: absolute;
   right: 13px;
   top: 15px;
-  color: var(--billing-violet);
+  color: var(--gold-accent);
 }
 .invoice-workspace .billing-metric:nth-child(1) {
-  background: #f1f7ff;
+  background: var(--surface);
 }
 .invoice-workspace .billing-metric:nth-child(2) {
   background: #eefbf4;
 }
 .invoice-workspace .billing-metric:nth-child(3) {
-  background: #fff9ef;
+  background: color-mix(in srgb, var(--gold) 16%, var(--surface));
 }
 .invoice-workspace .billing-metric:nth-child(4) {
-  background: #f7f4ff;
+  background: var(--surface);
 }
 .invoice-workspace .billing-charts {
   grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
@@ -195,7 +198,9 @@
   text-align: center;
   border-radius: 50%;
   margin: 20px auto;
-  background: radial-gradient(circle, #fff 55%, transparent 56%), conic-gradient(#14986d var(--collected), #f88b1c 0);
+  background:
+    radial-gradient(circle, var(--surface) 55%, transparent 56%),
+    conic-gradient(#14986d var(--collected), var(--gold) 0);
 }
 .invoice-workspace .billing-ring strong {
   font-size: 24px;
@@ -205,7 +210,7 @@
   border-collapse: collapse;
 }
 .invoice-workspace .billing-table th {
-  background: #f7f9f9;
+  background: var(--pale);
   font-size: 11px;
   letter-spacing: 0.035em;
   text-transform: uppercase;
@@ -220,7 +225,7 @@
   overflow-x: auto;
 }
 .invoice-workspace .billing-table a {
-  color: #4737c9;
+  color: var(--ink-2);
   font-weight: 650;
 }
 .invoice-workspace .billing-table tr[data-status="cancelled"] {
@@ -249,7 +254,7 @@
   font: inherit;
 }
 .invoice-workspace :focus-visible {
-  outline: 2px solid #7669f1;
+  outline: 2px solid var(--gold-accent);
   outline-offset: 3px;
 }
 @media (max-width: 900px) {
