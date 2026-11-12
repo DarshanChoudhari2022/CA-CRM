@@ -18,11 +18,20 @@ const storagePath = "firm/collection/document.pdf";
 const pdf = Buffer.from("%PDF-1.7\n1 0 obj\n<< /Type /Catalog >>\nendobj\n%%EOF\n");
 
 function uploadRequest(bytes: Uint8Array = pdf) {
-  const form = new FormData();
-  form.set("file", new File([new Uint8Array(bytes)], "accounts.pdf", { type: "application/pdf" }));
+  // Use wire-format bytes so cancelling an oversized request does not race
+  // Undici's asynchronous FormData encoder in the test process.
+  const boundary = "collection-test-boundary";
+  const body = Buffer.concat([
+    Buffer.from(
+      `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="accounts.pdf"\r\nContent-Type: application/pdf\r\n\r\n`,
+    ),
+    bytes,
+    Buffer.from(`\r\n--${boundary}--\r\n`),
+  ]);
   return new Request(`https://example.invalid/api/collect/${token}`, {
     method: "POST",
-    body: form,
+    headers: { "Content-Type": `multipart/form-data; boundary=${boundary}` },
+    body: new Uint8Array(body),
   });
 }
 
