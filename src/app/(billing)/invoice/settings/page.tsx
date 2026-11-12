@@ -15,8 +15,7 @@ export default async function PracticeSettingsPage({
       <header className="space-y-1">
         <h1 className="text-xl font-semibold">Practice settings</h1>
         <p className="text-sm text-slate-600">
-          Configure billing details and message drafts. PDF branding and document numbering use the existing PSB
-          configuration.
+          Set billing details, default PDF styling, terms and conditions, and message drafts.
         </p>
       </header>
       <nav className="billing-toolbar flex flex-wrap gap-2" aria-label="Practice settings sections">

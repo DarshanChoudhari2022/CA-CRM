@@ -60,6 +60,15 @@ export async function ConfigurationPanel({ section, saved }: { section: Settings
                   {field.label}
                   {field.type === "textarea" ? (
                     <textarea {...input} maxLength={field.max} rows={3} />
+                  ) : field.options ? (
+                    <select {...input}>
+                      <option value="">Use workspace default</option>
+                      {Object.entries(field.options).map(([value, label]) => (
+                        <option key={value} value={value}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
                   ) : (
                     <input {...input} type={field.type ?? "text"} maxLength={field.max} />
                   )}

@@ -50,6 +50,7 @@ export async function getSupplementalDocumentPdf(id: string, kinds: SupplementKi
       received: 0,
       createdAt: document.created_at,
       dueDate: document.due_date,
+      documentLabel: billingLabels[kind],
       details: { ...details, template: kind === "quotation" ? details.template : "modern", documentType: "quotation" },
       notes: [
         source?.data ? `Source invoice: ${source.data.invoice_number}` : "",
@@ -59,7 +60,8 @@ export async function getSupplementalDocumentPdf(id: string, kinds: SupplementKi
         .filter(Boolean)
         .join("\n\n"),
     });
-    const output = kind === "quotation" ? bytes : await labelSupplement(bytes, kind, document.status);
+    const output =
+      kind === "quotation" || details.presentation ? bytes : await labelSupplement(bytes, kind, document.status);
     return new Response(Buffer.from(output), {
       headers: {
         "Content-Type": "application/pdf",

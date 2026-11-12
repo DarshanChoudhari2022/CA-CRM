@@ -1,9 +1,28 @@
 import { z } from "zod";
 
 export const invoiceTemplates = ["classic", "modern"] as const;
+export const documentLayouts = { classic: "Classic", modern: "Modern", minimal: "Minimal" } as const;
+export const documentPresentationSchema = z.object({
+  showLogo: z.boolean().default(true),
+  layout: z.enum(["classic", "modern", "minimal"]).default("modern"),
+  issuer: z.string().trim().max(160).default(""),
+  issuerDetails: z.string().trim().max(700).default(""),
+  recipient: z.string().trim().max(200).default(""),
+  recipientContact: z.string().trim().max(250).default(""),
+  payment: z.string().trim().max(700).default(""),
+  signatory: z.string().trim().max(120).default(""),
+  terms: z.string().trim().max(3000).default(""),
+  footer: z.string().trim().max(500).default(""),
+  accent: z
+    .string()
+    .regex(/^#[0-9a-f]{6}$/i)
+    .default("#102d40"),
+});
+export type DocumentPresentation = z.infer<typeof documentPresentationSchema>;
 export const invoiceDetailsSchema = z.object({
   template: z.enum(invoiceTemplates).default("modern"),
   documentType: z.enum(["invoice", "quotation"]).default("invoice"),
+  presentation: documentPresentationSchema.optional(),
   reference: z.string().trim().max(40).default(""),
   invoiceDate: z.iso.date(),
   address: z.string().trim().max(300).default(""),

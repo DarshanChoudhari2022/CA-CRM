@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { documentLayouts } from "@/modules/crm/invoice-details";
 
 export const practiceTabs = ["firm", "bank", "branding", "numbering", "sharing"] as const;
 
@@ -8,6 +9,7 @@ type SettingsField = {
   max: number;
   type?: "text" | "tel" | "email" | "url" | "textarea";
   pattern?: string;
+  options?: Record<string, string>;
 };
 
 export type SettingsSection = (typeof practiceTabs)[number] | "smart-drafts";
@@ -42,6 +44,14 @@ export const settingsSections: Record<SettingsSection, { label: string; fields: 
       { name: "logo_url", label: "Logo URL (HTTPS)", max: 500, type: "url", pattern: "^https://[^ /]+[^ ]*$" },
       { name: "accent_color", label: "Accent colour (hex)", max: 7, type: "text", pattern: "^#[0-9A-Fa-f]{6}$" },
       { name: "footer", label: "Invoice footer", max: 500, type: "textarea" },
+      {
+        name: "default_layout",
+        label: "Default template",
+        max: 7,
+        pattern: "^(classic|modern|minimal)$",
+        options: documentLayouts,
+      },
+      { name: "terms", label: "Default terms and conditions", max: 3000, type: "textarea" },
     ],
   },
   numbering: {

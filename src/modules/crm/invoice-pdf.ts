@@ -1,3 +1,5 @@
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import fontkit from "@pdf-lib/fontkit";
 import { PDFDocument, type PDFFont, type PDFPage, rgb, StandardFonts } from "pdf-lib";
 import QRCode from "qrcode";
@@ -22,6 +24,7 @@ export type InvoicePdfData = {
   received: number;
   notes: string;
   details?: InvoiceDetails;
+  documentLabel?: string;
 };
 type TextStyle = {
   font: PDFFont;
@@ -59,14 +62,18 @@ export async function generateInvoicePdf(invoice: InvoicePdfData): Promise<Uint8
     tn: reference,
   });
   const paymentQr =
-    !classic && details.documentType === "invoice" && invoice.status === "issued" && balance > 0
+    !details.presentation &&
+    !classic &&
+    details.documentType === "invoice" &&
+    invoice.status === "issued" &&
+    balance > 0
       ? await pdf.embedPng(
           await QRCode.toBuffer(`upi://pay?${payment}`, { margin: 0, scale: 5, errorCorrectionLevel: "M" }),
         )
       : null;
   const [background, bank, regular, bold, heading, fallback, fallbackBold, italic] = await Promise.all([
-    pdf.embedPng(classic ? art.classic : art.modern),
-    classic ? pdf.embedPng(art.bank) : Promise.resolve(null),
+    details.presentation ? Promise.resolve(null) : pdf.embedPng(classic ? art.classic : art.modern),
+    !details.presentation && classic ? pdf.embedPng(art.bank) : Promise.resolve(null),
     pdf.embedFont(art.regular, { subset: true }),
     pdf.embedFont(art.bold, { subset: true }),
     pdf.embedFont(art.heading, { subset: true }),
@@ -173,9 +180,191 @@ export async function generateInvoicePdf(invoice: InvoicePdfData): Promise<Uint8
       ? `${day}.${month}.${year}`
       : `${day}-${["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][Number(month) - 1]}-${year}`;
   };
+  if (details.presentation) {
+    const presentation = details.presentation;
+    const minimal = presentation.layout === "minimal";
+    const modern = presentation.layout === "modern";
+    const issuerFont = modern || minimal ? bold : await pdf.embedFont(StandardFonts.TimesRomanBold);
+    sets.set(issuerFont, new Set(issuerFont.getCharacterSet()));
+    const accentHex = presentation.accent.slice(1);
+    const accent = minimal
+      ? ink
+      : rgb(
+          parseInt(accentHex.slice(0, 2), 16) / 255,
+          parseInt(accentHex.slice(2, 4), 16) / 255,
+          parseInt(accentHex.slice(4, 6), 16) / 255,
+        );
+    const issuer = presentation.issuer || "PSB & Associates LLP";
+    const label = invoice.documentLabel ?? (details.documentType === "quotation" ? "Quotation" : "Invoice");
+    pdf.setTitle(`${reference} - ${issuer}`);
+    pdf.setAuthor(issuer);
+    const left = 42;
+    const right = 553;
+    const width = right - left;
+    let top = 0;
+    const startPage = () => {
+      const sheet = pdf.addPage([595.28, 841.89]);
+      if (!minimal) rect(sheet, left, 34, width, modern ? 5 : 2, accent);
+      top = 61;
+      return sheet;
+    };
+    let page = startPage();
+    const draw = (value: string, x: number, style: TextStyle) => text(page, value, x, top, style);
+    const ensure = (height: number) => {
+      if (top + height <= 792) return false;
+      page = startPage();
+      return true;
+    };
+    const bodyStyle = { font: regular, size: 10, color: ink };
+    const labelStyle = { font: bold, size: 10, color: ink };
+    const paragraph = (value: string, x = left, available = width, style = bodyStyle) => {
+      if (!value) return;
+      for (const block of value.split(/\r?\n/)) {
+        if (!block.trim()) {
+          top += 9;
+          continue;
+        }
+        for (const line of wrap(block, style.font, style.size, available)) {
+          ensure(15);
+          draw(line, x, style);
+          top += 15;
+        }
+      }
+    };
+    const issuerX = presentation.showLogo ? left + 48 : left;
+    if (presentation.showLogo) {
+      const logo = await pdf.embedPng(await readFile(join(process.cwd(), "public", "brand", "ca-india-logo.png")));
+      const dimensions = logo.scaleToFit(35, 35);
+      page.drawImage(logo, { x: left, y: page.getHeight() - 49 - dimensions.height, ...dimensions });
+    }
+    draw(label, right, { font: bold, size: 23, align: "right", color: ink, width: 220 });
+    paragraph(issuer, issuerX, 300 - (issuerX - left), {
+      font: issuerFont,
+      size: 16,
+      color: ink,
+    });
+    top += 9;
+    draw(invoice.status.toUpperCase(), right, { font: bold, size: 9, align: "right", color: muted });
+    paragraph(presentation.issuerDetails, issuerX, 300 - (issuerX - left));
+    top = Math.max(top, 91);
+    top += 12;
+    rule(page, left, top, right, top, accent, 1);
+    top += 23;
+    const meta = [
+      ["Number", invoice.number],
+      ["Reference", details.reference],
+      ["Date", date(details.invoiceDate)],
+      [label === "Invoice" ? "Due" : "Valid until", invoice.dueDate ? date(invoice.dueDate) : ""],
+    ].filter(([, value]) => value);
+    const recipientTop = top;
+    for (const [key, value] of meta) {
+      draw(key, 388, { ...bodyStyle, color: muted });
+      draw(value, right, { ...bodyStyle, align: "right", width: 108 });
+      top += 16;
+    }
+    const metadataEnd = top;
+    top = recipientTop;
+    paragraph("Bill to", left, 300, labelStyle);
+    paragraph(presentation.recipient || invoice.client.title, left, 310);
+    paragraph(
+      [
+        details.attention,
+        presentation.recipientContact,
+        details.address,
+        details.gstin && `GSTIN ${details.gstin}`,
+        details.placeOfSupply && `Place of supply ${details.placeOfSupply}`,
+      ]
+        .filter(Boolean)
+        .join("\n"),
+      left,
+      310,
+    );
+    top = Math.max(top, metadataEnd) + 13;
+    paragraph(invoice.title, left, width, labelStyle);
+    top += 11;
+    const tableHead = () => {
+      if (modern) rect(page, left, top - 13, width, 22, ink);
+      const style = { ...labelStyle, color: modern ? rgb(1, 1, 1) : ink };
+      draw("Description", left + 6, style);
+      for (const [value, x] of [
+        ["Qty", 370],
+        ["Rate", 455],
+        ["Amount", 547],
+      ] as const)
+        draw(value, x, { ...style, align: "right" });
+      top += 12;
+      rule(page, left, top, right, top, accent);
+      top += 16;
+    };
+    ensure(60);
+    tableHead();
+    details.items.forEach((item, index) => {
+      const description = [item.description, item.hsnSac && `HSN / SAC ${item.hsnSac}`, item.details]
+        .filter(Boolean)
+        .join("\n");
+      const lines = wrap(description, regular, 10, 280);
+      if (ensure(34)) tableHead();
+      for (const [value, x, columnWidth] of [
+        [String(item.quantity), 370, 39],
+        [money(item.rate), 455, 76],
+        [money(totals.lines[index]), 547, 85],
+      ] as const)
+        draw(value, x, { ...bodyStyle, align: "right", width: columnWidth });
+      for (const line of lines) {
+        if (ensure(20)) tableHead();
+        draw(line, left + 6, bodyStyle);
+        top += 15;
+      }
+      rule(page, left, top - 5, right, top - 5, rgb(0.85, 0.87, 0.88));
+      top += 6;
+    });
+    const summary = [
+      ["Subtotal", totals.subtotal],
+      ["Discount", totals.discount],
+      ["Total", totals.total],
+      ...(label === "Invoice" && invoice.received > 0
+        ? ([
+            ["Received", invoice.received],
+            ["Balance due", balance],
+          ] as const)
+        : []),
+    ] as const;
+    ensure(summary.length * 21 + 15);
+    top += 12;
+    for (const [key, value] of summary) {
+      const style = key === "Total" || key === "Balance due" ? labelStyle : bodyStyle;
+      if (key === "Total") rule(page, 350, top - 13, right, top - 13, accent);
+      draw(key, 353, style);
+      draw(`INR ${money(value)}`, right, { ...style, align: "right", width: 130 });
+      top += 21;
+    }
+    for (const [key, value] of [
+      ["Payment instructions", presentation.payment],
+      ["Notes", invoice.notes],
+      ["Terms and conditions", presentation.terms],
+      ["Issued by", presentation.signatory],
+      ["", presentation.footer],
+    ]) {
+      if (!value) continue;
+      ensure(48);
+      top += 12;
+      if (key) paragraph(key, left, width, labelStyle);
+      paragraph(value);
+    }
+    const pages = pdf.getPages();
+    pages.forEach((sheet, index) => {
+      text(sheet, `${index + 1} / ${pages.length}`, right, sheet.getHeight() - 28, {
+        font: regular,
+        size: 8,
+        align: "right",
+        color: muted,
+      });
+    });
+    return pdf.save();
+  }
   const sheet = () => {
     const page = pdf.addPage(classic ? [612, 792] : [595.28, 841.89]);
-    page.drawImage(background, { x: 0, y: 0, width: page.getWidth(), height: page.getHeight() });
+    if (background) page.drawImage(background, { x: 0, y: 0, width: page.getWidth(), height: page.getHeight() });
     if (classic) {
       text(page, details.documentType === "quotation" ? "quotation" : "INVOICE", 291, 123.5, {
         font: details.documentType === "quotation" ? heading : fallbackBold,

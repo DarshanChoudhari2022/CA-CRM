@@ -85,8 +85,42 @@
   margin-bottom: 1.3rem;
 }
 .paperHeader {
-  border-bottom: 2px solid var(--gold);
+  border-bottom: 2px solid var(--document-accent);
   padding-bottom: 0.9rem;
+}
+.paperHeader > div:first-child {
+  flex: 1 1 12rem;
+}
+.issuer {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+}
+.issuer img {
+  flex: none;
+  object-fit: contain;
+}
+.paperHeader > div:last-child {
+  margin-left: auto;
+  text-align: right;
+}
+.paperHeader p {
+  margin: 0.3rem 0 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  white-space: pre-wrap;
+}
+.paper[data-layout="modern"] {
+  border-top: 5px solid var(--document-accent);
+}
+.paper[data-layout="classic"] {
+  border-top: 2px solid var(--gold);
+}
+.paper[data-layout="classic"] .paperHeader strong {
+  font-family: Georgia, serif;
+}
+.paper[data-layout="minimal"] .paperHeader {
+  border-color: var(--line);
 }
 .paperHeader h2 {
   margin: 0 0 0.25rem;
@@ -132,6 +166,7 @@
 }
 .paper table {
   width: 100%;
+  min-width: 19rem;
   border-collapse: collapse;
 }
 .paper th,
@@ -140,27 +175,56 @@
   border-bottom: 1px solid var(--line);
   text-align: right;
   vertical-align: top;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 .paper th {
   background: var(--pale);
 }
+.paper[data-layout="modern"] th {
+  background: #102d40;
+  color: white;
+}
+.paper[data-layout="minimal"] th {
+  background: white;
+}
 .paper th:first-child,
 .paper td:first-child {
   text-align: left;
-  width: 100%;
+  width: auto;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 .paper small {
   display: block;
   color: var(--muted);
 }
 .totals {
-  width: fit-content;
+  min-width: min(100%, 12rem);
+  width: max-content;
   margin: 1rem 0 0 auto;
+  font-variant-numeric: tabular-nums;
 }
-.notes {
+.totals > :nth-last-child(-n + 2) {
+  border-top: 1px solid var(--line);
+  padding-top: 0.45rem;
+}
+.notes,
+.paperFooter {
   white-space: pre-wrap;
   font-size: 0.8rem;
   margin-top: 1.25rem;
+}
+.notes h4 {
+  margin: 0 0 0.25rem;
+}
+.notes p {
+  margin: 0;
+}
+.paperFooter {
+  border-top: 1px solid var(--line);
+  padding-top: 0.75rem;
+  color: var(--muted);
 }
 @media (max-width: 1050px) {
   .split {

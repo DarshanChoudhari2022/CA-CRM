@@ -22,6 +22,7 @@ import {
   type SourceInvoice,
 } from "./documents-form";
 import { InvoiceSharing } from "./invoice-sharing";
+import { presentationDefaults } from "./presentation-defaults";
 
 const documentFields = "id,title,notes,status,client_id,amount,due_date,created_at,updated_at,invoice_details";
 const invoiceFields = `${documentFields},invoice_number` as const;
@@ -139,6 +140,22 @@ export async function BillingDocumentsPage({
       clients.push(data);
     }
     const parsed = invoiceDetailsSchema.safeParse(record?.invoice_details);
+    const details = parsed.success
+      ? parsed.data
+      : defaultInvoiceDetails(
+          record?.title ?? "",
+          Number(record?.amount ?? 0),
+          record?.created_at ?? new Date().toISOString(),
+        );
+    if (editing && !details.presentation) {
+      const { data, error } = await db
+        .from("billing_practice_settings")
+        .select("section,settings")
+        .eq("organization_id", organizationId)
+        .in("section", ["firm", "bank", "branding"]);
+      if (error) throw new Error("Could not load document defaults.");
+      details.presentation = presentationDefaults(data ?? []);
+    }
     const initial: BillingFormData = {
       id: record?.id ?? null,
       updatedAt: record?.updated_at ?? null,
@@ -155,13 +172,7 @@ export async function BillingDocumentsPage({
       clientId: record?.client_id ?? "",
       dueDate: record?.due_date ?? "",
       sourceId: record && "source_invoice_id" in record ? (record.source_invoice_id ?? "") : "",
-      details: parsed.success
-        ? parsed.data
-        : defaultInvoiceDetails(
-            record?.title ?? "",
-            Number(record?.amount ?? 0),
-            record?.created_at ?? new Date().toISOString(),
-          ),
+      details,
     };
     return (
       <section>

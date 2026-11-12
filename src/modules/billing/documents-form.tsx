@@ -1,7 +1,15 @@
 "use client";
 
-import { useActionState, useState } from "react";
-import { type InvoiceDetails, type InvoiceItem, invoiceTotals } from "@/modules/crm/invoice-details";
+import Image from "next/image";
+import { type CSSProperties, useActionState, useState } from "react";
+import {
+  type DocumentPresentation,
+  documentLayouts,
+  documentPresentationSchema,
+  type InvoiceDetails,
+  type InvoiceItem,
+  invoiceTotals,
+} from "@/modules/crm/invoice-details";
 import { type BillingKind, billingLabels, billingPath, formatBillingAmount, isAdjustment } from "./documents";
 import styles from "./documents.module.css";
 import { saveBillingDocument, transitionBillingDocument } from "./documents-actions";
@@ -23,6 +31,16 @@ export type BillingFormData = {
 };
 
 const emptyItem: InvoiceItem = { description: "", details: "", hsnSac: "", quantity: 1, rate: 0 };
+const presentationFields = [
+  ["issuer", "Firm name", 160, 1],
+  ["issuerDetails", "Firm address, contact and tax details", 700, 3],
+  ["recipient", "Billing name override", 200, 1],
+  ["recipientContact", "Billing contact details", 250, 2],
+  ["payment", "Payment instructions", 700, 3],
+  ["signatory", "Issued by / signatory", 120, 1],
+  ["terms", "Terms and conditions", 3000, 5],
+  ["footer", "Document footer", 500, 2],
+] as const;
 const fields = [
   ["reference", "Reference", 40],
   ["attention", "Attention", 100],
@@ -57,6 +75,7 @@ export function BillingDocumentForm({
   const [lineKeys, setLineKeys] = useState(() => initial.details.items.map((_, index) => String(index)));
   const adjustment = isAdjustment(kind);
   const locked = initial.status !== "draft";
+  const presentation = details.presentation ?? documentPresentationSchema.parse({ layout: details.template });
   const client = clients.find((choice) => choice.id === clientId);
   const source = sources.find((choice) => choice.id === sourceId);
   const pdf =
@@ -72,6 +91,8 @@ export function BillingDocumentForm({
     setLineKeys((previous) => [...previous, crypto.randomUUID()]);
   }
   const updateDetails = (patch: Partial<InvoiceDetails>) => setDetails((previous) => ({ ...previous, ...patch }));
+  const updatePresentation = (patch: Partial<DocumentPresentation>) =>
+    updateDetails({ presentation: { ...presentation, ...patch } });
   function updateItem(index: number, patch: Partial<InvoiceItem>) {
     setDetails((previous) => ({
       ...previous,
@@ -176,17 +197,20 @@ export function BillingDocumentForm({
               onChange={(event) => updateDetails({ address: event.target.value })}
             />
           </label>
-          {(kind === "invoice" || kind === "quotation") && (
+          {!locked && (
             <label>
               PDF template
               <select
-                value={details.template}
+                value={presentation.layout}
                 onChange={(event) =>
-                  updateDetails({ template: event.target.value === "classic" ? "classic" : "modern" })
+                  updatePresentation({ layout: documentPresentationSchema.shape.layout.parse(event.target.value) })
                 }
               >
-                <option value="modern">Modern</option>
-                <option value="classic">Classic</option>
+                {Object.entries(documentLayouts).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
               </select>
             </label>
           )}
@@ -326,6 +350,50 @@ export function BillingDocumentForm({
             />
           </label>
         </fieldset>
+        {(!locked || details.presentation) && (
+          <fieldset className="billing-card" disabled={locked || pending}>
+            <legend>Branding, payment and terms</legend>
+            <label>
+              <span>
+                <input
+                  type="checkbox"
+                  checked={presentation.showLogo}
+                  onChange={(event) => updatePresentation({ showLogo: event.target.checked })}
+                />{" "}
+                Show firm logo
+              </span>
+            </label>
+            {presentationFields.map(([key, label, maxLength, rows]) => (
+              <label key={key} htmlFor={`document-${key}`}>
+                {label}
+                {rows === 1 ? (
+                  <input
+                    id={`document-${key}`}
+                    value={presentation[key]}
+                    maxLength={maxLength}
+                    onChange={(event) => updatePresentation({ [key]: event.target.value })}
+                  />
+                ) : (
+                  <textarea
+                    id={`document-${key}`}
+                    value={presentation[key]}
+                    maxLength={maxLength}
+                    rows={rows}
+                    onChange={(event) => updatePresentation({ [key]: event.target.value })}
+                  />
+                )}
+              </label>
+            ))}
+            <label>
+              Document accent
+              <input
+                type="color"
+                value={presentation.accent}
+                onChange={(event) => updatePresentation({ accent: event.target.value })}
+              />
+            </label>
+          </fieldset>
+        )}
         {state.error && <p role="alert">{state.error}</p>}
         <div className="billing-toolbar">
           {!locked && (
@@ -362,9 +430,19 @@ export function BillingDocumentForm({
       </form>
       <aside className={styles.preview} aria-label="Document preview">
         <p className={styles.previewLabel}>Document preview</p>
-        <div className={styles.paper}>
+        <div
+          className={styles.paper}
+          data-layout={presentation.layout}
+          style={{ "--document-accent": presentation.accent } as CSSProperties}
+        >
           <header className={styles.paperHeader}>
-            <strong>PSB &amp; Associates LLP</strong>
+            <div className={styles.issuer}>
+              {presentation.showLogo && <Image src="/brand/ca-india-logo.png" width={42} height={42} alt="" />}
+              <div>
+                <strong>{presentation.issuer || "PSB & Associates LLP"}</strong>
+                {presentation.issuerDetails && <p>{presentation.issuerDetails}</p>}
+              </div>
+            </div>
             <div>
               <h2>{billingLabels[kind]}</h2>
               <span className={styles.status}>{initial.status}</span>
@@ -373,7 +451,8 @@ export function BillingDocumentForm({
           <div className={styles.paperDetails}>
             <div>
               <span className={styles.caption}>Bill to</span>
-              <strong>{client?.title || "Choose a client"}</strong>
+              <strong>{presentation.recipient || client?.title || "Choose a client"}</strong>
+              {presentation.recipientContact && <span>{presentation.recipientContact}</span>}
               {details.attention && <span>{details.attention}</span>}
               {details.address && <span>{details.address}</span>}
               {details.gstin && <span>GSTIN {details.gstin.toUpperCase()}</span>}
@@ -437,7 +516,23 @@ export function BillingDocumentForm({
               <strong>{totals ? formatBillingAmount.format(totals.total) : "—"}</strong>
             </dd>
           </dl>
-          {notes && <p className={styles.notes}>{notes}</p>}
+          {(
+            [
+              ["Payment instructions", presentation.payment],
+              ["Notes", notes],
+              ["Terms and conditions", presentation.terms],
+              ["Issued by", presentation.signatory],
+            ] as const
+          ).map(
+            ([label, value]) =>
+              value && (
+                <section key={label} className={styles.notes}>
+                  <h4>{label}</h4>
+                  <p>{value}</p>
+                </section>
+              ),
+          )}
+          {presentation.footer && <footer className={styles.paperFooter}>{presentation.footer}</footer>}
         </div>
       </aside>
     </div>
