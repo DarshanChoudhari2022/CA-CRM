@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { beforeEach, expect, it, vi } from "vitest";
+import { collectionFileLimit, collectionRequestLimit } from "@/modules/crm/documents";
 
 const mocks = vi.hoisted(() => ({
   store: vi.fn(),
@@ -82,15 +83,15 @@ it("rejects a PDF filename and MIME type with invalid magic before accessing the
 });
 
 it.each([
-  ["file limit", 10 * 1024 * 1024 + 1],
-  ["request-body limit", 11 * 1024 * 1024 + 1],
+  ["file limit", collectionFileLimit + 1],
+  ["request-body limit", collectionRequestLimit + 1],
 ])("rejects a multipart PDF above the %s before accessing the database", async (_limit, size) => {
   const bytes = new Uint8Array(size);
   bytes.set(pdf);
   const response = await POST(uploadRequest(bytes), { params: Promise.resolve({ token }) });
 
   expect(response.status).toBe(303);
-  expect(response.headers.get("location")).toBe(`${collectionUrl}?result=error`);
+  expect(response.headers.get("location")).toBe(`${collectionUrl}?result=too-large`);
   expect(mocks.store).not.toHaveBeenCalled();
   expect(mocks.rpc).not.toHaveBeenCalled();
   expect(mocks.upload).not.toHaveBeenCalled();

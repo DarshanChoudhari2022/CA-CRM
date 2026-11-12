@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { notFound } from "next/navigation";
 import { automationStore } from "@/modules/crm/automation/store";
+import { CollectionForm } from "./collection-form";
 export const dynamic = "force-dynamic";
 export const metadata = {
   title: "Secure document upload",
@@ -37,24 +38,12 @@ export default async function Collect({
           </p>
         ) : (
           <>
-            <p>PDF, JPEG, PNG, DOCX or XLSX · maximum 10 MB. This private link accepts one document.</p>
+            <p>PDF, JPEG, PNG, DOCX or XLSX · maximum 4 MB. This private link accepts one document.</p>
             {result === "error" && (
               <p role="alert">Upload failed. Retry with the same file, or contact the firm for a new link.</p>
             )}
-            <form
-              className="public-upload-form"
-              action={`/api/collect/${token}`}
-              method="post"
-              encType="multipart/form-data"
-            >
-              <label htmlFor="file">Choose document</label>
-              <input id="file" name="file" type="file" required accept=".pdf,.jpg,.jpeg,.png,.docx,.xlsx" />
-              <div className="public-upload-actions">
-                <button className="button button-primary" type="submit">
-                  Upload document
-                </button>
-              </div>
-            </form>
+            {result === "too-large" && <p role="alert">Choose a file that is 4 MB or smaller.</p>}
+            <CollectionForm token={token} />
           </>
         )}
       </section>
