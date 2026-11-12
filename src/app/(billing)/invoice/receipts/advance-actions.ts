@@ -34,7 +34,15 @@ export async function recordAdvance(_: State, form: FormData): Promise<State> {
     p_reference: reference,
     p_remarks: remarks,
   });
-  if (error) return { error: error.code === "23505" ? "This advance reference is already recorded." : error.message };
+  if (error)
+    return {
+      error:
+        error.code === "23505"
+          ? "This advance reference is already recorded."
+          : error.message === "Choose an active client"
+            ? "Choose an active client."
+            : "The advance could not be recorded. Check the payment details and try again.",
+    };
   revalidatePath("/invoice", "layout");
   redirect("/invoice/receipts?advanceResult=recorded#advances");
 }
@@ -52,7 +60,15 @@ export async function allocateAdvance(_: State, form: FormData): Promise<State> 
     p_amount: value,
     p_request: request,
   });
-  if (error) return { error: error.message };
+  if (error) {
+    const messages = [
+      "The advance does not have enough remaining balance",
+      "Choose an invoice for the same client",
+      "This allocation request was already used",
+    ];
+    const message = messages.find((value) => value === error.message);
+    return { error: message ? `${message}.` : "The advance could not be applied. Refresh and check its balance." };
+  }
   for (const path of ["/crm/invoices", "/crm/reports"]) revalidatePath(path);
   revalidatePath("/invoice", "layout");
   redirect("/invoice/receipts?advanceResult=allocated#advances");

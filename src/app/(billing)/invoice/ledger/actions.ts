@@ -16,7 +16,13 @@ export async function cancelInvoice(_: CancelState, form: FormData): Promise<Can
     p_invoice: values.data.invoice,
     p_reason: values.data.reason,
   });
-  if (error) return { error: error.message };
+  if (error)
+    return {
+      error:
+        error.message === "Only an issued invoice can be cancelled"
+          ? "Only an issued invoice can be cancelled."
+          : "The invoice could not be cancelled. Refresh and check its status.",
+    };
   revalidatePath("/invoice", "layout");
   revalidatePath("/crm/invoices");
   revalidatePath("/crm/reports");

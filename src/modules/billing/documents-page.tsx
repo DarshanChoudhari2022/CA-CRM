@@ -85,7 +85,8 @@ export async function BillingDocumentsPage({
     const clients: ClientChoice[] = [];
     const sources: SourceInvoice[] = [];
     const services: ServiceChoice[] = [];
-    if (editing && !isAdjustment(kind)) {
+    async function loadServices() {
+      if (!editing || isAdjustment(kind)) return;
       for (let start = 0; ; start += 500) {
         const { data, error } = await db
           .from("billing_service_catalog")
@@ -100,45 +101,48 @@ export async function BillingDocumentsPage({
         if (data.length < 500) break;
       }
     }
-    if (editing) {
-      for (let start = 0; ; start += 500) {
+    async function loadClientsAndSources() {
+      if (editing) {
+        for (let start = 0; ; start += 500) {
+          const { data, error } = await db
+            .from("crm_clients")
+            .select("id,title,email,phone")
+            .eq("organization_id", organizationId)
+            .order("title")
+            .order("id")
+            .range(start, start + 499);
+          if (error) throw new Error("Could not load billing clients.");
+          clients.push(...data);
+          if (data.length < 500) break;
+        }
+        if (isAdjustment(kind)) {
+          for (let start = 0; ; start += 500) {
+            const { data, error } = await db
+              .from("crm_invoices")
+              .select("id,client_id,invoice_number,title")
+              .eq("organization_id", organizationId)
+              .eq("status", "issued")
+              .or(standardInvoice)
+              .order("created_at", { ascending: false })
+              .order("id")
+              .range(start, start + 499);
+            if (error) throw new Error("Could not load source invoices.");
+            sources.push(...data);
+            if (data.length < 500) break;
+          }
+        }
+      } else if (record) {
         const { data, error } = await db
           .from("crm_clients")
           .select("id,title,email,phone")
           .eq("organization_id", organizationId)
-          .order("title")
-          .order("id")
-          .range(start, start + 499);
-        if (error) throw new Error("Could not load billing clients.");
-        clients.push(...data);
-        if (data.length < 500) break;
+          .eq("id", record.client_id)
+          .single();
+        if (error) throw new Error("Could not load billing client.");
+        clients.push(data);
       }
-      if (isAdjustment(kind)) {
-        for (let start = 0; ; start += 500) {
-          const { data, error } = await db
-            .from("crm_invoices")
-            .select("id,client_id,invoice_number,title")
-            .eq("organization_id", organizationId)
-            .eq("status", "issued")
-            .or(standardInvoice)
-            .order("created_at", { ascending: false })
-            .order("id")
-            .range(start, start + 499);
-          if (error) throw new Error("Could not load source invoices.");
-          sources.push(...data);
-          if (data.length < 500) break;
-        }
-      }
-    } else {
-      const { data, error } = await db
-        .from("crm_clients")
-        .select("id,title,email,phone")
-        .eq("organization_id", organizationId)
-        .eq("id", record.client_id)
-        .single();
-      if (error) throw new Error("Could not load billing client.");
-      clients.push(data);
     }
+    await Promise.all([loadServices(), loadClientsAndSources()]);
     const parsed = invoiceDetailsSchema.safeParse(record?.invoice_details);
     const details = parsed.success
       ? parsed.data

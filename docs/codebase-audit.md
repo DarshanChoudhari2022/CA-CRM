@@ -33,4 +33,14 @@ The Next.js App Router serves a responsive web portal for employees and administ
 
 ## Verification scope
 
+### Follow-up findings
+
+| Category | Severity | Change |
+| --- | --- | --- |
+| Broken | Medium | CRM and WhatsApp webhook handlers classify malformed input as 400 and oversized bodies as 413. Processing failures retain 503. |
+| Security | Medium | Invoice cancellation and advance payment forms show known business messages and generic fallbacks for unexpected database errors. |
+| Performance | Medium | Invoice draft client and service queries run concurrently. Large catalogs still need searchable, paginated selectors. |
+| Responsiveness | Medium | Billing buttons, navigation and form controls use 44 px minimum heights on phones, tablets and coarse-pointer devices. |
+| Code quality | Low | Route tests cover malformed and oversized webhook requests and a transient CRM intake failure. |
+
 The local checks cover application compilation, types, lint, dependency advisories and the test suite. Authenticated production flows, real delivery providers, database migration replay and Lighthouse results require separate acceptance checks with the target environment. Use synthetic records for write and delivery checks. Provider readiness, permission, billing and scheduler settings can affect delivery even when application tests pass.

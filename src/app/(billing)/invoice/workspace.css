@@ -294,3 +294,14 @@
     display: none;
   }
 }
+@media (pointer: coarse), (max-width: 900px) {
+  .invoice-workspace .billing-button,
+  .invoice-workspace .billing-sidebar :where(nav) a,
+  .invoice-workspace :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
+    min-height: 44px;
+  }
+  .invoice-workspace :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
+    font-size: 16px;
+    max-width: 100%;
+  }
+}
