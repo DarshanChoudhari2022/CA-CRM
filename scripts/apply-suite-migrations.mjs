@@ -37,6 +37,13 @@ try {
     "20261029090000_admin_only_crm",
     "20261112090000_manual_attendance",
     "20261112091000_bulk_manual_attendance",
+    "20261112100000_invoice_workspace",
+    "20261112101000_billing_documents",
+    "20261112102000_billing_receipts",
+    "20261112103000_billing_configuration",
+    "20261112104000_billing_recurring",
+    "20261112105000_billing_filing_drafts",
+    "20261112110000_billing_advances",
   ]) {
     const version = name.split("_")[0];
     const source = await readFile(new URL(`../supabase/migrations/${name}.sql`, import.meta.url), "utf8");

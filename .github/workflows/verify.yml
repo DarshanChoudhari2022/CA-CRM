@@ -60,6 +60,7 @@ jobs:
           INVOICE_PAYMENT_DB_TEST: "1"
       - run: node scripts/test-access-location-db.mjs
       - run: node scripts/test-invoice-templates-db.mjs
+      - run: node scripts/test-invoice-workspace-db.mjs
       - run: node scripts/test-attendance-concurrency-db.mjs
       - if: always()
         run: supabase stop

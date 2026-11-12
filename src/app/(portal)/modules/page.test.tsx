@@ -16,9 +16,10 @@ it.each(["employee", "manager"])("sends %s directly to Attendance without render
   mocks.identity.mockResolvedValue({ role });
   await expect(Promise.resolve().then(() => ModulesPage())).rejects.toThrow("redirect:/dashboard");
 });
-it.each(["admin", "partner"])("keeps both workspaces available to %s", async (role) => {
+it.each(["admin", "partner"])("keeps all workspaces available to %s", async (role) => {
   mocks.identity.mockResolvedValue({ role });
   const html = renderToStaticMarkup(await ModulesPage());
   expect(html).toContain('href="/crm"');
   expect(html).toContain('href="/dashboard"');
+  expect(html).toContain('href="/invoice"');
 });
