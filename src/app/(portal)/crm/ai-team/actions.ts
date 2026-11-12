@@ -64,7 +64,7 @@ export async function prepareWorkpaper(_: WorkpaperState, form: FormData): Promi
       p_model: process.env.GROQ_MODEL,
       p_sources: sources,
     });
-    if (reservation.error) return { error: reservation.error.message };
+    if (reservation.error) return { error: "This draft could not be started. Refresh and check its status." };
     started = true;
     const output = await generateAgentDraft(job, sources);
     const saved = await admin.rpc("ca_finish_job", {

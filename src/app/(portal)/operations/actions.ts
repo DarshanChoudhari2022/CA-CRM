@@ -40,7 +40,13 @@ export async function operation(
   else if (kind === "cancel")
     result = await client.rpc("cancel_workspace_request", { p_kind: value("kind"), p_id: value("id") });
   else return { error: "Unknown operation." };
-  if (result.error) return { error: result.error.message };
+  if (result.error)
+    return {
+      error:
+        kind === "cancel"
+          ? "This request could not be cancelled. Refresh and try again."
+          : "The change could not be saved. Check the details and try again.",
+    };
   for (const path of ["/operations", "/employees", "/attendance", "/leave", "/approvals"]) revalidatePath(path);
   return { success: "Saved." };
 }

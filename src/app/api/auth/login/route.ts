@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { isSameOrigin } from "@/lib/request-origin";
 import { createClient } from "@/lib/supabase/server";
 import { isAdministrator } from "@/modules/identity/access";
 
@@ -10,20 +11,8 @@ const credentials = z.object({
 });
 
 export async function POST(request: NextRequest) {
-  const origin = request.headers.get("origin");
-  const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host");
-  if (origin) {
-    try {
-      const originHost = new URL(origin).host;
-      const hostMatches = host ? originHost === host : false;
-      const nextHostMatches = originHost === request.nextUrl.host;
-      if (!hostMatches && !nextHostMatches && origin !== request.nextUrl.origin) {
-        return NextResponse.json({ error: "Invalid request origin." }, { status: 403 });
-      }
-    } catch {
-      return NextResponse.json({ error: "Invalid request origin." }, { status: 403 });
-    }
-  }
+  if (request.headers.has("origin") && !isSameOrigin(request))
+    return NextResponse.json({ error: "Invalid request origin." }, { status: 403 });
   const parsed = credentials.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Enter your work email and password." }, { status: 400 });
 

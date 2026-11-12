@@ -73,7 +73,7 @@ export async function retryLeaveEmail(_: LeaveState, form: FormData): Promise<Le
   if (error || !row) return { error: "Notification unavailable." };
   if (row.state !== "pending") {
     const reset = await client.rpc("retry_leave_email", { p_id: id.data });
-    if (reset.error) return { error: reset.error.message };
+    if (reset.error) return { error: "This notification could not be queued again. Refresh and check its status." };
   }
   try {
     const notification = await prepareLeaveNotification(identity.organizationId, row.leave_request_id);
