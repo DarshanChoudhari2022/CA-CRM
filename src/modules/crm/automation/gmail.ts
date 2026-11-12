@@ -1,3 +1,4 @@
+import { gmailAccessToken, gmailRequest as providerRequest } from "../gmail-connection";
 import { ingest } from "./store";
 
 type Part = { mimeType?: string; filename?: string; body?: { data?: string }; parts?: Part[] };
@@ -8,32 +9,20 @@ export function emailText(part: Part): string {
   return (part.parts ?? []).map(emailText).join("\n").slice(0, 10000);
 }
 async function gmailRequest(token: string, path: string, init: RequestInit = {}) {
-  const res = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/${path}`, {
-    ...init,
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-    cache: "no-store",
-    signal: AbortSignal.timeout(15000),
-  });
-  if (!res.ok) throw new Error(`Gmail intake HTTP ${res.status}`);
-  return res.json();
+  return providerRequest(
+    `https://gmail.googleapis.com/gmail/v1/users/me/${path}`,
+    {
+      ...init,
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    },
+    "intake",
+  );
 }
 export async function pollGmail() {
   // Dedicated inbound label is mandatory: never scan the entire personal mailbox.
-  const label = process.env.GMAIL_INTAKE_LABEL_ID;
+  const label = process.env.GMAIL_INTAKE_LABEL_ID?.trim();
   if (!label) return 0;
-  const res = await fetch("https://oauth2.googleapis.com/token", {
-    method: "POST",
-    signal: AbortSignal.timeout(15000),
-    body: new URLSearchParams({
-      client_id: process.env.GMAIL_CLIENT_ID ?? "",
-      client_secret: process.env.GMAIL_CLIENT_SECRET ?? "",
-      refresh_token: process.env.GMAIL_REFRESH_TOKEN ?? "",
-      grant_type: "refresh_token",
-    }),
-  });
-  if (!res.ok) throw new Error("Gmail intake authorization failed");
-  const token = (await res.json()).access_token;
-  if (typeof token !== "string") throw new Error("Invalid Gmail token");
+  const token = await gmailAccessToken();
   const list = await gmailRequest(token, `messages?labelIds=${encodeURIComponent(label)}&maxResults=1`);
   let count = 0;
   for (const item of list.messages ?? []) {

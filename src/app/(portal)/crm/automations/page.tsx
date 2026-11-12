@@ -2,7 +2,7 @@ import Link from "next/link";
 import { PageHead } from "@/components/page-head";
 import { createClient } from "@/lib/supabase/server";
 import { integrationStatus } from "@/modules/crm/providers";
-import { requireIdentity } from "@/modules/identity/session";
+import { requireCrmIdentity as requireIdentity } from "@/modules/identity/crm";
 import { acknowledge } from "./actions";
 export default async function AutomationsPage() {
   const identity = await requireIdentity();

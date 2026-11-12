@@ -59,7 +59,11 @@ export async function saveRecord(_: CrmState, form: FormData): Promise<CrmState>
 export async function recordPayment(_: CrmState, form: FormData): Promise<CrmState> {
   if (!isAdministrator((await requireIdentity()).role)) return { error: "Administrator access required." };
   const parsed = z
-    .object({ invoice: z.uuid(), amount: z.coerce.number().positive(), reference: z.string().trim().min(3).max(120) })
+    .object({
+      invoice: z.uuid(),
+      amount: z.coerce.number().positive().multipleOf(0.01),
+      reference: z.string().trim().min(3).max(120),
+    })
     .safeParse(Object.fromEntries(form));
   if (!parsed.success) return { error: "Check the payment details." };
   const supabase = await createClient();
@@ -73,7 +77,7 @@ export async function recordPayment(_: CrmState, form: FormData): Promise<CrmSta
   return { success: "Payment recorded." };
 }
 export async function convertLead(_: CrmState, form: FormData): Promise<CrmState> {
-  await requireIdentity();
+  if (!isAdministrator((await requireIdentity()).role)) return { error: "Administrator access required." };
   const id = z.uuid().safeParse(form.get("id"));
   if (!id.success) return { error: "Invalid lead." };
   const supabase = await createClient();

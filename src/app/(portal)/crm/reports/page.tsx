@@ -2,7 +2,7 @@ import Link from "next/link";
 import { PageHead } from "@/components/page-head";
 import { createClient } from "@/lib/supabase/server";
 import { crmModules } from "@/modules/crm/config";
-import { requireIdentity } from "@/modules/identity/session";
+import { requireCrmIdentity as requireIdentity } from "@/modules/identity/crm";
 export default async function CrmReports() {
   const identity = await requireIdentity();
   const client = await createClient();

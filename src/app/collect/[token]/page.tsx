@@ -26,8 +26,8 @@ export default async function Collect({
   const { data: document } = await db.from("crm_documents").select("title").eq("id", link.document_id).single();
   const { result } = await searchParams;
   return (
-    <main style={{ maxWidth: 600, margin: "8vh auto", padding: 24 }}>
-      <section className="card">
+    <main className="public-upload-page">
+      <section className="card public-upload-card">
         <p className="eyebrow">PSB & Associates LLP</p>
         <h1>Secure document upload</h1>
         <h2>{document?.title}</h2>
@@ -41,12 +41,19 @@ export default async function Collect({
             {result === "error" && (
               <p role="alert">Upload failed. Retry with the same file, or contact the firm for a new link.</p>
             )}
-            <form action={`/api/collect/${token}`} method="post" encType="multipart/form-data">
+            <form
+              className="public-upload-form"
+              action={`/api/collect/${token}`}
+              method="post"
+              encType="multipart/form-data"
+            >
               <label htmlFor="file">Choose document</label>
               <input id="file" name="file" type="file" required accept=".pdf,.jpg,.jpeg,.png,.docx,.xlsx" />
-              <button className="button section" type="submit">
-                Upload document
-              </button>
+              <div className="public-upload-actions">
+                <button className="button button-primary" type="submit">
+                  Upload document
+                </button>
+              </div>
             </form>
           </>
         )}

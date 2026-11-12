@@ -11,7 +11,11 @@ const tokenErrors: Record<string, string> = {
     "Google rejected the token request (invalid_request). Check the three Gmail OAuth variables are complete and contain only their values.",
 };
 
-export async function gmailRequest(url: string, init: RequestInit, stage: "authorization" | "profile" | "send") {
+export async function gmailRequest(
+  url: string,
+  init: RequestInit,
+  stage: "authorization" | "profile" | "send" | "intake",
+) {
   let response: Response;
   try {
     response = await fetch(url, { ...init, cache: "no-store", redirect: "error", signal: AbortSignal.timeout(20000) });
@@ -31,6 +35,10 @@ export async function gmailRequest(url: string, init: RequestInit, stage: "autho
       );
     const reason = result?.error?.errors?.[0]?.reason;
     const status = result?.error?.status;
+    if (stage === "intake" && response.status === 400)
+      throw new GmailProviderError(
+        "Gmail rejected the intake request (HTTP 400). Check GMAIL_INTAKE_LABEL_ID is the internal label ID from this authorized mailbox, without spaces.",
+      );
     if (response.status === 403 && (reason === "accessNotConfigured" || status === "SERVICE_DISABLED"))
       throw new GmailProviderError("Gmail API is disabled for this OAuth project. Enable Gmail API in Google Cloud.");
     if (response.status === 403 && (reason === "insufficientPermissions" || status === "PERMISSION_DENIED"))

@@ -10,6 +10,14 @@ const rollback = new Error("rollback quality fixtures");
 try {
   await sql.begin(async (tx) => {
     await prepareAccessTest(tx);
+    if (process.argv.includes("--preview-admin-only"))
+      await tx.unsafe(
+        await readFile(new URL("../supabase/migrations/20261029090000_admin_only_crm.sql", import.meta.url), "utf8"),
+      );
+    // Avoid non-transactional nextval changes during rollback-only verification.
+    await tx.unsafe(
+      "alter table public.crm_invoices alter column invoice_number set default ('TEST-'||gen_random_uuid()::text)",
+    );
     await tx.unsafe("set local time zone 'Asia/Kolkata'");
     // Match the Storage service's request-local metadata deletion flag for generated, rolled-back rows only.
     await tx`select set_config('storage.allow_delete_query','true',true)`;
@@ -76,6 +84,7 @@ try {
     const [history] = await tx`select public.my_attendance_history(to_char(current_date,'YYYY-MM')) as value`;
     assert.ok(history.value.length > 0, "history derives dates when no reconciliation rows exist");
     await denied((sp) => sp`select public.attendance_register(current_date)`, "employee cannot read team register");
+    await setTestIdentity(tx, admin);
     const firstId = randomUUID(),
       secondId = randomUUID();
     const [first] =

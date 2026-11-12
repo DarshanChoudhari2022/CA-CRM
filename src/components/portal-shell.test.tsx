@@ -71,6 +71,26 @@ async function render() {
   );
 }
 describe("workspace shell mobile interactions", () => {
+  it("hides the workspace switch from employees", async () => {
+    await act(async () =>
+      root.render(
+        <PortalShell
+          identity={{
+            userId: "employee",
+            organizationId: "fixture",
+            employeeId: "employee",
+            fullName: "Employee",
+            role: "employee",
+          }}
+        >
+          <p>Attendance</p>
+        </PortalShell>,
+      ),
+    );
+    expect(container.querySelector('a[href="/modules"]')).toBeNull();
+    expect(container.querySelector('a[href^="/crm"]')).toBeNull();
+    expect(container.querySelector('a[href="/leave"]')).not.toBeNull();
+  });
   it("moves focus into the dialog, wraps Tab in both directions and restores the opener", async () => {
     await render();
     const button = container.querySelector<HTMLButtonElement>('[aria-controls="mobile-workspace-menu"]');

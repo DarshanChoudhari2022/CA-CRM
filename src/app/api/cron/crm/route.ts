@@ -2,6 +2,7 @@ import { pollGmail } from "@/modules/crm/automation/gmail";
 import { secretMatches } from "@/modules/crm/automation/security";
 import { automationOrganization, automationStore } from "@/modules/crm/automation/store";
 import { runAutomation } from "@/modules/crm/automation/worker";
+import { GmailProviderError } from "@/modules/crm/gmail-connection";
 
 export const maxDuration = 300;
 export async function GET(request: Request) {
@@ -27,10 +28,15 @@ export async function GET(request: Request) {
     if (run.error) throw new Error("Run could not be recorded");
     runId = run.data.id;
     let mailError = false;
+    let mailErrorDetail: string | undefined;
     try {
       await pollGmail();
-    } catch {
+    } catch (error) {
       mailError = true;
+      mailErrorDetail =
+        error instanceof GmailProviderError
+          ? error.message
+          : "Gmail intake processing failed. Check the intake record and database configuration.";
     }
     const result = await runAutomation();
     const saved = await automationStore()
@@ -38,11 +44,14 @@ export async function GET(request: Request) {
       .update({
         finished_at: new Date().toISOString(),
         status: mailError || result.failures ? "partial_failure" : "complete",
-        summary: { ...result, mailError },
+        summary: { ...result, mailError, mailErrorDetail },
       })
       .eq("id", runId);
     if (saved.error) throw new Error("Run summary not saved");
-    return Response.json({ ...result, mailError }, { status: mailError || result.failures ? 503 : 200 });
+    return Response.json(
+      { ...result, mailError, mailErrorDetail },
+      { status: mailError || result.failures ? 503 : 200 },
+    );
   } catch {
     if (runId)
       await automationStore()

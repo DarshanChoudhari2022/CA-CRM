@@ -6,8 +6,10 @@ import { StatusPill } from "@/components/status-pill";
 import { createClient } from "@/lib/supabase/server";
 import { formatWorkedMinutes } from "@/modules/attendance/duration";
 import { type AttendanceRegister, registerArgs, registerFilters, registerResults } from "@/modules/attendance/register";
+import { isAdministrator } from "@/modules/identity/access";
 import { requireIdentity } from "@/modules/identity/session";
 import { reportTimezone } from "../reports/data";
+import { ManualAttendanceForm } from "./manual-attendance-form";
 
 export default async function TeamAttendance({
   searchParams,
@@ -36,6 +38,26 @@ export default async function TeamAttendance({
     client.from("employees").select("department").eq("organization_id", identity.organizationId).limit(1000),
   ]);
   const register = rows.data as AttendanceRegister | null;
+  const administrator = isAdministrator(identity.role);
+  const employeeIds = register?.items.map((row) => row.employee_id) ?? [];
+  const workDetails =
+    administrator && employeeIds.length
+      ? await Promise.all([
+          client
+            .from("daily_work_reports")
+            .select("employee_id,summary")
+            .eq("organization_id", identity.organizationId)
+            .eq("work_date", filters.date)
+            .in("employee_id", employeeIds),
+          client
+            .from("daily_work_items")
+            .select("id,employee_id,title,notes,status")
+            .eq("organization_id", identity.organizationId)
+            .eq("work_date", filters.date)
+            .in("employee_id", employeeIds)
+            .order("created_at"),
+        ])
+      : null;
   const url = new URLSearchParams({
     date: filters.date,
     branch: filters.branch,
@@ -52,9 +74,19 @@ export default async function TeamAttendance({
         title="Team attendance"
         description={`Daily register · ${zone}`}
         action={
-          <a className="button button-secondary" href={`/team-attendance/export?${url}`}>
-            Export filtered CSV
-          </a>
+          <div className="ai-actions">
+            {administrator && (
+              <Link
+                className="button button-primary"
+                href={`/team-attendance/monthly?month=${filters.date.slice(0, 7)}`}
+              >
+                Monthly attendance
+              </Link>
+            )}
+            <a className="button button-secondary" href={`/team-attendance/export?${url}`}>
+              Export filtered CSV
+            </a>
+          </div>
         }
       />
       <section className="card">
@@ -127,44 +159,84 @@ export default async function TeamAttendance({
                   <th>Out</th>
                   <th>Time worked</th>
                   <th>Result</th>
+                  {administrator && <th>Details</th>}
                 </tr>
               </thead>
               <tbody>
-                {register?.items.map((row) => (
-                  <tr key={row.employee_id}>
-                    <td>
-                      {row.full_name}
-                      <small className="stat-note"> {row.employee_code}</small>
-                    </td>
-                    <td>
-                      {row.branch}
-                      <br />
-                      {row.department}
-                    </td>
-                    <td>{row.context.replaceAll("_", " ")}</td>
-                    <td>
-                      {time(row.check_in_at)}
-                      {row.check_in_at && (
-                        <div>
-                          <PunchLocation value={row.checkInLocation} />
-                        </div>
+                {register?.items.map((row) => {
+                  const summary = workDetails?.[0].data?.find(
+                    (report) => report.employee_id === row.employee_id,
+                  )?.summary;
+                  const tasks = workDetails?.[1].data?.filter((task) => task.employee_id === row.employee_id) ?? [];
+                  return (
+                    <tr key={row.employee_id}>
+                      <td>
+                        {row.full_name}
+                        <small className="stat-note"> {row.employee_code}</small>
+                      </td>
+                      <td>
+                        {row.branch}
+                        <br />
+                        {row.department}
+                      </td>
+                      <td>{row.context.replaceAll("_", " ")}</td>
+                      <td>
+                        {time(row.check_in_at)}
+                        {row.check_in_at && (
+                          <div>
+                            <PunchLocation value={row.checkInLocation} />
+                          </div>
+                        )}
+                        {row.is_late && <span className="status status-amber">Late</span>}
+                      </td>
+                      <td>
+                        {time(row.check_out_at)}
+                        {row.check_out_at && (
+                          <div>
+                            <PunchLocation value={row.checkOutLocation} />
+                          </div>
+                        )}
+                      </td>
+                      <td>{row.duration_minutes === null ? "—" : formatWorkedMinutes(row.duration_minutes)}</td>
+                      <td>
+                        <StatusPill value={row.result} />
+                      </td>
+                      {administrator && (
+                        <td>
+                          <details>
+                            <summary>Daily work</summary>
+                            {workDetails?.some(({ error }) => error) ? (
+                              <p>Daily work details are temporarily unavailable.</p>
+                            ) : (
+                              <>
+                                {!summary && !tasks.length && <p>No work entered for this date.</p>}
+                                {summary && <p style={{ whiteSpace: "pre-wrap" }}>{summary}</p>}
+                                {tasks.length > 0 && (
+                                  <ul>
+                                    {tasks.map((task) => (
+                                      <li key={task.id}>
+                                        {task.title} <StatusPill value={task.status} />
+                                        {task.notes && <p style={{ whiteSpace: "pre-wrap" }}>{task.notes}</p>}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                )}
+                              </>
+                            )}
+                          </details>
+                          {row.context === "working_day" &&
+                            !row.check_in_at &&
+                            !row.check_out_at &&
+                            row.result !== "leave_approved" &&
+                            row.result !== "excused" &&
+                            row.employee_id !== identity.employeeId && (
+                              <ManualAttendanceForm key={filters.date} employee={row.employee_id} date={filters.date} />
+                            )}
+                        </td>
                       )}
-                      {row.is_late && <span className="status status-amber">Late</span>}
-                    </td>
-                    <td>
-                      {time(row.check_out_at)}
-                      {row.check_out_at && (
-                        <div>
-                          <PunchLocation value={row.checkOutLocation} />
-                        </div>
-                      )}
-                    </td>
-                    <td>{row.duration_minutes === null ? "—" : formatWorkedMinutes(row.duration_minutes)}</td>
-                    <td>
-                      <StatusPill value={row.result} />
-                    </td>
-                  </tr>
-                ))}
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

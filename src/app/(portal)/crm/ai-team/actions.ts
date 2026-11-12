@@ -9,7 +9,7 @@ import { loadAgentSources } from "@/modules/ai/context";
 import { type AgentJob, briefSchema } from "@/modules/ai/domain";
 import { generateAgentDraft } from "@/modules/ai/provider";
 import { integrationStatus } from "@/modules/crm/providers";
-import { requireIdentity } from "@/modules/identity/session";
+import { requireCrmIdentity as requireIdentity } from "@/modules/identity/crm";
 
 export type WorkpaperState = { error?: string; success?: string };
 

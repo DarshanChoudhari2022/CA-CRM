@@ -59,7 +59,7 @@ export async function generateInvoicePdf(invoice: InvoicePdfData): Promise<Uint8
     tn: reference,
   });
   const paymentQr =
-    !classic && balance > 0 && invoice.status !== "void"
+    !classic && details.documentType === "invoice" && invoice.status === "issued" && balance > 0
       ? await pdf.embedPng(
           await QRCode.toBuffer(`upi://pay?${payment}`, { margin: 0, scale: 5, errorCorrectionLevel: "M" }),
         )
@@ -229,12 +229,24 @@ export async function generateInvoicePdf(invoice: InvoicePdfData): Promise<Uint8
       });
       if (paymentQr) page.drawImage(paymentQr, { x: 526.5, y: 841.89 - 436 - 45.5, width: 45.5, height: 45.5 });
       else
-        text(page, invoice.status === "void" ? "VOID" : "PAID", 549, 462, {
-          font: fallbackBold,
-          size: 10,
-          color: green,
-          align: "center",
-        });
+        text(
+          page,
+          invoice.status === "void"
+            ? "VOID"
+            : invoice.status !== "issued"
+              ? "DRAFT"
+              : details.documentType === "quotation"
+                ? "QUOTATION"
+                : "PAID",
+          549,
+          462,
+          {
+            font: fallbackBold,
+            size: 10,
+            color: green,
+            align: "center",
+          },
+        );
       if (invoice.received > 0)
         text(page, `Payments recorded: ₹${money(invoice.received)}   Balance: ₹${money(balance)}`, 23, 416, {
           font: fallback,

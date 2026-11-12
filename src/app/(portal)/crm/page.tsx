@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import { PageHead } from "@/components/page-head";
 import { createClient } from "@/lib/supabase/server";
 import { loadCrmOverview } from "@/modules/crm/overview";
-import { requireIdentity } from "@/modules/identity/session";
+import { requireCrmIdentity as requireIdentity } from "@/modules/identity/crm";
 import PortalLoading from "../loading";
 import { CrmOverviewView } from "./overview";
 import "./overview.css";

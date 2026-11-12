@@ -12,7 +12,7 @@ vi.mock("@/lib/supabase/server", () => ({ createClient: mocks.client }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("@/modules/crm/providers", () => ({ integrationStatus: () => ({ WhatsApp: true }), sendWhatsApp: mocks.send }));
 
-import { supportSend } from "./support-actions";
+import { supportDraft, supportSend } from "./support-actions";
 
 afterEach(() => {
   vi.resetAllMocks();
@@ -42,6 +42,12 @@ function setup() {
   return form;
 }
 describe("Authkey admin send boundary", () => {
+  it.each(["employee", "manager"])("rejects %s AI drafts before accessing data or providers", async (role) => {
+    const form = setup();
+    mocks.identity.mockResolvedValue({ role });
+    expect(await supportDraft({}, form)).toEqual({ error: "Administrator required." });
+    expect(mocks.client).not.toHaveBeenCalled();
+  });
   it("rejects employee sends before any data access", async () => {
     const form = setup();
     mocks.identity.mockResolvedValue({ role: "employee" });

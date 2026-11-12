@@ -8,6 +8,6 @@ export function roleLabel(role: PortalIdentity["role"]) {
   return isAdministrator(role) ? "Administrator" : "Employee";
 }
 
-export function canUseCrmModule(role: PortalIdentity["role"], module: string) {
-  return !["invoices", "automation-center", "automations"].includes(module) || isAdministrator(role);
+export function canUseCrmModule(role: PortalIdentity["role"], _module: string) {
+  return isAdministrator(role);
 }

@@ -30,6 +30,13 @@ try {
     "20261016103000_leave_email_notifications",
     "20261016120000_invoice_templates",
     "20261016140000_employee_manager_controls",
+    "20261026233000_payment_precision",
+    "20261026234000_collection_integrity",
+    "20261026235000_reminder_reopening",
+    "20261026235500_explicit_dispatch_cancellation",
+    "20261029090000_admin_only_crm",
+    "20261112090000_manual_attendance",
+    "20261112091000_bulk_manual_attendance",
   ]) {
     const version = name.split("_")[0];
     const source = await readFile(new URL(`../supabase/migrations/${name}.sql`, import.meta.url), "utf8");

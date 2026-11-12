@@ -2,7 +2,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
-import { requireIdentity } from "@/modules/identity/session";
+import { requireCrmIdentity as requireIdentity } from "@/modules/identity/crm";
 export async function acknowledge(form: FormData) {
   await requireIdentity();
   const id = z.uuid().parse(form.get("id"));

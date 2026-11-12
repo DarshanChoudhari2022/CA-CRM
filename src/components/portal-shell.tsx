@@ -190,10 +190,12 @@ export function PortalShell({ children, identity }: { children: React.ReactNode;
             <Link href="/change-password">Change password</Link>
           </div>
           <div className="topbar-actions">
-            <Link href="/modules" className="button button-secondary workspace-switch">
-              <ArrowLeftRight size={16} />
-              <span>Switch workspace</span>
-            </Link>
+            {["admin", "partner"].includes(identity.role) && (
+              <Link href="/modules" className="button button-secondary workspace-switch">
+                <ArrowLeftRight size={16} />
+                <span>Switch workspace</span>
+              </Link>
+            )}
             <form action={signOut}>
               <button className="button button-secondary" type="submit">
                 <LogOut size={16} />
