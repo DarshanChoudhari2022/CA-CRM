@@ -597,13 +597,13 @@ input[type="checkbox"] {
   .auth-form {
     padding: 24px;
   }
-  th,
-  td {
-    white-space: nowrap;
-  }
   .table-wrap {
     max-width: 100%;
     overscroll-behavior-x: contain;
+  }
+  .table-wrap :is(th, td) {
+    overflow-wrap: anywhere;
+    padding-inline: 10px;
   }
 }
 @media (prefers-reduced-motion: reduce) {
