@@ -804,6 +804,9 @@ tbody tr:last-child td {
     0 22px 70px rgba(16, 39, 59, 0.12),
     0 3px 10px rgba(16, 39, 59, 0.035);
 }
+.auth-sign-in-stack {
+  width: min(440px, 100%);
+}
 .auth-form-topline {
   display: flex;
   justify-content: space-between;

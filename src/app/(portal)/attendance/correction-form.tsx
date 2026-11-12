@@ -1,15 +1,26 @@
 "use client";
 
-import { useActionState } from "react";
-import { requestCorrection } from "./actions";
+import { useActionState, useState } from "react";
+import { type ActionState, requestCorrection } from "./actions";
 
-export function CorrectionForm() {
-  const [state, action, pending] = useActionState(requestCorrection, {});
+export function CorrectionForm({ today }: { today: string }) {
+  const [checkIn, setCheckIn] = useState("");
+  const [checkOut, setCheckOut] = useState("");
+  const invalidTimeOrder = Boolean(checkIn && checkOut && checkOut <= checkIn);
+  const [state, action, pending] = useActionState(async (previous: ActionState, data: FormData) => {
+    const result = await requestCorrection(previous, data);
+    if (result.success) {
+      setCheckIn("");
+      setCheckOut("");
+    }
+    return result;
+  }, {});
   return (
-    <form action={action} className="card">
+    <form action={action} className="card" id="missed-attendance">
       <div className="section-title">
-        <h2>Request a correction</h2>
+        <h2>Missed a check-in or check-out?</h2>
       </div>
+      <p>Enter the times you actually worked and send the request to your administrator for review.</p>
       {state.error && (
         <div className="form-error" role="alert">
           {state.error}
@@ -23,18 +34,39 @@ export function CorrectionForm() {
       <div className="grid grid-2">
         <div className="field">
           <label htmlFor="workDate">Work date</label>
-          <input id="workDate" name="workDate" type="date" required />
+          <input id="workDate" name="workDate" type="date" max={today} required />
         </div>
         <div />
       </div>
       <div className="grid grid-2">
         <div className="field">
-          <label htmlFor="checkIn">Correct check-in</label>
-          <input id="checkIn" name="checkIn" type="time" required />
+          <label htmlFor="checkIn">Actual check-in</label>
+          <input
+            id="checkIn"
+            name="checkIn"
+            type="time"
+            value={checkIn}
+            onChange={(event) => setCheckIn(event.currentTarget.value)}
+            required
+          />
         </div>
         <div className="field">
-          <label htmlFor="checkOut">Correct check-out</label>
-          <input id="checkOut" name="checkOut" type="time" required />
+          <label htmlFor="checkOut">Actual check-out</label>
+          <input
+            id="checkOut"
+            name="checkOut"
+            type="time"
+            value={checkOut}
+            onChange={(event) => setCheckOut(event.currentTarget.value)}
+            aria-invalid={invalidTimeOrder || undefined}
+            aria-describedby={invalidTimeOrder ? "check-out-error" : undefined}
+            required
+          />
+          {invalidTimeOrder && (
+            <p id="check-out-error" role="alert" className="form-error">
+              Check-out must be after check-in.
+            </p>
+          )}
         </div>
       </div>
       <div className="field">
@@ -48,7 +80,7 @@ export function CorrectionForm() {
           placeholder="Explain what needs to be corrected."
         />
       </div>
-      <button type="submit" className="button button-primary" disabled={pending}>
+      <button type="submit" className="button button-primary" disabled={pending || invalidTimeOrder}>
         {pending ? "Submitting…" : "Submit request"}
       </button>
     </form>

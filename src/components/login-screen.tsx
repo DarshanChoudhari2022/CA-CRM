@@ -29,7 +29,7 @@ export function LoginScreen({ audience }: { audience: "admin" | "employee" | "cr
         <div className="auth-orbit auth-orbit-two" />
       </section>
       <section className="auth-form-wrap">
-        <div>
+        <div className="auth-sign-in-stack">
           <LoginForm audience={audience} />
           <p style={{ textAlign: "center", marginTop: 24 }}>
             <Link href={audience === "admin" || audience === "crm" ? "/employee/login" : "/admin/login"}>

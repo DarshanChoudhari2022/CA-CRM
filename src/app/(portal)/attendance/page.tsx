@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { PageHead } from "@/components/page-head";
 import { PunchLocation } from "@/components/punch-location";
@@ -50,6 +51,11 @@ export default async function AttendancePage({ searchParams }: { searchParams: P
         eyebrow="My attendance"
         title="Attendance history"
         description="Your saved punches and attendance results for this month."
+        action={
+          <Link href="#missed-attendance" className="button button-secondary">
+            Request missed attendance
+          </Link>
+        }
       />
       <section className="card">
         <div className="section-title">
@@ -115,7 +121,7 @@ export default async function AttendancePage({ searchParams }: { searchParams: P
         </div>
       </section>
       <section className="section">
-        <CorrectionForm />
+        <CorrectionForm today={new Intl.DateTimeFormat("en-CA", { timeZone: timezone }).format(new Date())} />
       </section>
       <section className="section card">
         <h2>Your correction requests</h2>

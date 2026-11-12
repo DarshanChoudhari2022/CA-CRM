@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export type EmployeeTotal = {
   employee_code: string;
   employee_name: string;
@@ -10,7 +12,15 @@ export type EmployeeTotal = {
   incompleteDays: number;
   durationMinutes: number;
 };
-export function EmployeeTotals({ rows, snapshot = false }: { rows: EmployeeTotal[]; snapshot?: boolean }) {
+export function EmployeeTotals({
+  rows,
+  snapshot = false,
+  calendarMonth,
+}: {
+  rows: EmployeeTotal[];
+  snapshot?: boolean;
+  calendarMonth?: string;
+}) {
   return (
     <section className="card section">
       <h2>Employee monthly calculation</h2>
@@ -37,17 +47,37 @@ export function EmployeeTotals({ rows, snapshot = false }: { rows: EmployeeTotal
             {rows.map((row) => (
               <tr key={row.employee_code}>
                 <td>
-                  {row.employee_name}
+                  {calendarMonth ? (
+                    <Link
+                      href={`/team-attendance/monthly?${new URLSearchParams({ month: calendarMonth, employee: row.employee_code })}`}
+                    >
+                      <strong>{row.employee_name}</strong>
+                    </Link>
+                  ) : (
+                    row.employee_name
+                  )}
                   <br />
                   <small>
                     {row.employee_code} · {row.department}
                   </small>
                 </td>
                 <td>{row.expectedDays}</td>
-                <td>{row.presentDays}</td>
+                <td>
+                  {calendarMonth && row.presentDays > 0 ? (
+                    <span className="status status-green">{row.presentDays}</span>
+                  ) : (
+                    row.presentDays
+                  )}
+                </td>
                 <td>{row.leaveDays ?? "—"}</td>
                 {!snapshot && <td>{row.approvedLeaveDays ?? "—"}</td>}
-                <td>{row.absentDays}</td>
+                <td>
+                  {calendarMonth && row.absentDays > 0 ? (
+                    <span className="status status-red">{row.absentDays}</span>
+                  ) : (
+                    row.absentDays
+                  )}
+                </td>
                 <td>{row.incompleteDays}</td>
                 <td>
                   {Math.floor(row.durationMinutes / 60)}h {row.durationMinutes % 60}m
