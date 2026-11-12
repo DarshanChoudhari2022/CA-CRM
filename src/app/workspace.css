@@ -532,7 +532,7 @@ input[type="checkbox"] {
   .grid-3,
   .grid-4,
   .form-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .section-title {
     flex-wrap: wrap;

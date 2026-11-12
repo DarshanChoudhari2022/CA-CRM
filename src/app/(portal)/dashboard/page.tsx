@@ -1,4 +1,5 @@
 import { CalendarCheck2, ClipboardCheck, Clock3, UsersRound } from "lucide-react";
+import { Suspense } from "react";
 import { PageHead } from "@/components/page-head";
 import { StatusPill } from "@/components/status-pill";
 import type { DailyReportData } from "@/modules/attendance/daily-report";
@@ -9,13 +10,25 @@ import { ShiftDuration } from "../attendance/shift-duration";
 import { AdminOverview } from "./admin-overview";
 import { DailyReportCard } from "./daily-report-card";
 
+async function DailyWork({ report }: { report: Promise<DailyReportData | null> }) {
+  const data = await report;
+  return data ? (
+    <DailyReportCard report={data} />
+  ) : (
+    <section className="card section">
+      <h2>
+        Tasks performed today <span className="optional-badge">Optional</span>
+      </h2>
+      <p className="stat-note">Work updates are temporarily unavailable. You can still check in or check out above.</p>
+    </section>
+  );
+}
+
 export default async function DashboardPage() {
   const identity = await requireIdentity();
   if (["admin", "partner"].includes(identity.role)) return <AdminOverview />;
-  const [snapshot, report] = await Promise.all([
-    rpc<DashboardSnapshot>("dashboard_snapshot_v2"),
-    rpc<DailyReportData>("my_daily_report").catch(() => null),
-  ]);
+  const report = rpc<DailyReportData>("my_daily_report").catch(() => null);
+  const snapshot = await rpc<DashboardSnapshot>("dashboard_snapshot_v2");
   const cards = [
     ["Present today", snapshot.stats.present, `${snapshot.stats.expected} expected`, UsersRound],
     ["On leave", snapshot.stats.onLeave, "Approved for today", CalendarCheck2],
@@ -75,18 +88,15 @@ export default async function DashboardPage() {
           )}
         </div>
       </section>
-      {report ? (
-        <DailyReportCard report={report} />
-      ) : (
-        <section className="card section">
-          <h2>
-            Tasks performed today <span className="optional-badge">Optional</span>
-          </h2>
-          <p className="stat-note">
-            Work updates are temporarily unavailable. You can still check in or check out above.
-          </p>
-        </section>
-      )}
+      <Suspense
+        fallback={
+          <section className="card section" role="status">
+            Loading daily work…
+          </section>
+        }
+      >
+        <DailyWork report={report} />
+      </Suspense>
       <section className="section grid grid-2">
         <div className="card">
           <div className="section-title">

@@ -39,32 +39,24 @@ export default async function LeavePage() {
           <div className="section-title">
             <h2>My requests</h2>
           </div>
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Type</th>
-                  <th>Dates</th>
-                  <th>Days</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.requests.map((request) => (
-                  <tr key={request.id}>
-                    <td>{request.type}</td>
-                    <td>{request.dates}</td>
-                    <td>{request.days}</td>
-                    <td>
-                      <StatusPill value={request.state} />
-                      {request.state === "pending" && <CancelRequest id={request.id} kind="leave" />}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {!data.requests.length && <div className="empty">No leave requests yet.</div>}
-          </div>
+          {data.requests.length ? (
+            <ul className="leave-requests">
+              {data.requests.map((request) => (
+                <li key={request.id}>
+                  <div className="leave-request-heading">
+                    <strong>{request.type}</strong>
+                    <StatusPill value={request.state} />
+                  </div>
+                  <p className="stat-note">
+                    {request.dates} · {request.days} {request.days === 1 ? "day" : "days"}
+                  </p>
+                  {request.state === "pending" && <CancelRequest id={request.id} kind="leave" />}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="empty">No leave requests yet.</div>
+          )}
         </div>
       </section>
     </>
