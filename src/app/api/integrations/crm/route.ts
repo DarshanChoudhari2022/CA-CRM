@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { boundedBody, verifySignature } from "@/modules/crm/automation/security";
+import { boundedBody, parseWebhookJson, verifySignature, WebhookBodyError } from "@/modules/crm/automation/security";
 import { automationOrganization, automationStore, ingest } from "@/modules/crm/automation/store";
 
 const eventSchema = z.discriminatedUnion("kind", [
@@ -53,7 +53,7 @@ export async function POST(request: Request) {
       !verifySignature(`${stamp}.${raw}`, request.headers.get("x-crm-signature"), process.env.CRM_WEBHOOK_SECRET)
     )
       return Response.json({ error: "Invalid signature or expired timestamp" }, { status: 401 });
-    const event = eventSchema.safeParse(JSON.parse(raw));
+    const event = eventSchema.safeParse(parseWebhookJson(raw));
     if (!event.success) return Response.json({ error: "Invalid event payload" }, { status: 400 });
     const e = event.data;
     if (e.kind === "website")
@@ -79,7 +79,8 @@ export async function POST(request: Request) {
         { status: 409 },
       );
     return Response.json(data);
-  } catch {
+  } catch (error) {
+    if (error instanceof WebhookBodyError) return Response.json({ error: error.message }, { status: error.status });
     return Response.json({ error: "Event could not be processed" }, { status: 503 });
   }
 }
