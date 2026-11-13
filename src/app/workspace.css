@@ -602,8 +602,52 @@ input[type="checkbox"] {
     overscroll-behavior-x: contain;
   }
   .table-wrap :is(th, td) {
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
     padding-inline: 10px;
+  }
+}
+.attendance-history-label {
+  display: none;
+}
+@media (max-width: 720px) {
+  .attendance-history :is(table, tbody) {
+    display: block;
+  }
+  .attendance-history thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .attendance-history tbody tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 10px 14px;
+    padding-block: 14px;
+    border-top: 1px solid var(--line);
+  }
+  .attendance-history tbody td {
+    padding: 0;
+    border: 0;
+  }
+  .attendance-history tbody td:nth-child(2) {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    color: var(--muted);
+  }
+  .attendance-history .attendance-history-result {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+    text-align: right;
+  }
+  .attendance-history-label {
+    display: block;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 600;
   }
 }
 @media (prefers-reduced-motion: reduce) {
