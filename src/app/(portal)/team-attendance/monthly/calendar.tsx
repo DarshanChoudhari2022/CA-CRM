@@ -24,10 +24,28 @@ export function AttendanceCalendar({
 }) {
   const [state, action, pending] = useActionState(recordBulkAttendance, {});
   const [checked, setChecked] = useState<string[]>([]);
-  const selectedDates = checked.filter((date) => days.some((day) => day.date === date && day.editable));
+  const eligibleDates = days.filter((day) => day.editable).map((day) => day.date);
+  const selectedDates = eligibleDates.filter((date) => checked.includes(date));
   return (
-    <form action={action}>
+    <form action={action} id="bulk-attendance">
       <input type="hidden" name="employee" value={employee} />
+      {eligibleDates.length > 0 && (
+        <div className="filters section-title">
+          <button
+            type="button"
+            className="button button-secondary"
+            disabled={pending || selectedDates.length === eligibleDates.length}
+            onClick={() => setChecked(eligibleDates)}
+          >
+            Select all missed dates ({eligibleDates.length})
+          </button>
+          {selectedDates.length > 0 && (
+            <button type="button" className="button button-secondary" disabled={pending} onClick={() => setChecked([])}>
+              Clear selection
+            </button>
+          )}
+        </div>
+      )}
       <div className={styles.calendar}>
         {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((weekday) => (
           <span className={styles.weekday} key={weekday}>
@@ -54,6 +72,7 @@ export function AttendanceCalendar({
                 value={day.date}
                 aria-label={`Select ${day.date} for bulk attendance`}
                 checked={selectedDates.includes(day.date)}
+                disabled={pending}
                 onChange={(event) => {
                   const enabled = event.currentTarget.checked;
                   setChecked((current) =>

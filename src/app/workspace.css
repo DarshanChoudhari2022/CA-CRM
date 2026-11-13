@@ -606,6 +606,15 @@ input[type="checkbox"] {
     padding-inline: 10px;
   }
 }
+.attendance-link {
+  color: #1755a5;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+.attendance-link:hover {
+  color: #103d79;
+}
 .attendance-history-label {
   display: none;
 }
