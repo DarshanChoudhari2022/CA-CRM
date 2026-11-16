@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
+import { readFile } from "node:fs/promises";
 import postgres from "postgres";
 import { testDatabaseOptions } from "./test-database-options.mjs";
 import { prepareAccessTest, setTestIdentity } from "./test-session.mjs";
@@ -8,6 +9,15 @@ const sql = postgres(process.env.SUPABASE_DB_URL, { ...testDatabaseOptions(), co
 const rollback = new Error("rollback invoice template fixtures");
 try {
   await sql.begin(async (tx) => {
+    if (process.argv.includes("--history-preview")) {
+      for (const migration of [
+        "20261116100000_invoice_change_history",
+        "20261116101000_invoice_client_reassignment",
+        "20261116102000_scope_invoice_confirmation",
+      ]) {
+        await tx.unsafe(await readFile(new URL(`../supabase/migrations/${migration}.sql`, import.meta.url), "utf8"));
+      }
+    }
     // Candidate migrations and all fixture data are rolled back on hosted checks.
     process.env.TEST_ACCESS_PREVIEW = "1";
     await prepareAccessTest(tx);
