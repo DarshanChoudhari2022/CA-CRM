@@ -9,6 +9,7 @@ const labels = {
   invoice_history_edit: "Edited",
   invoice_history_delete: "Draft deleted",
   invoice_history_cancel: "Cancelled",
+  invoice_history_reassigned: "Client reassigned",
 };
 const historyDetails = z.object({
   before: z.record(z.string(), z.unknown()).nullable(),
@@ -19,6 +20,7 @@ const fieldNames: Record<string, string> = {
   title: "Title",
   notes: "Notes",
   client_id: "Client",
+  owner_id: "Assigned employee",
   amount: "Amount",
   due_date: "Due date",
   status: "Status",

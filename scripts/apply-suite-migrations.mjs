@@ -47,6 +47,7 @@ try {
     "20261112111000_invoice_presentation",
     "20261114100000_automatic_attendance_checkout",
     "20261116100000_invoice_change_history",
+    "20261116101000_invoice_client_reassignment",
   ]) {
     const version = name.split("_")[0];
     const source = await readFile(new URL(`../supabase/migrations/${name}.sql`, import.meta.url), "utf8");
