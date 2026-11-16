@@ -25,6 +25,15 @@ try {
       await tx.unsafe(
         await readFile(new URL("../supabase/migrations/20261029090000_admin_only_crm.sql", import.meta.url), "utf8"),
       );
+    if (process.argv.includes("--history-preview")) {
+      for (const migration of ["20261116100000_invoice_change_history", "20261116101000_invoice_client_reassignment"]) {
+        const [installed] =
+          await tx`select version from supabase_migrations.schema_migrations where version=${migration.split("_")[0]}`;
+        if (!installed) {
+          await tx.unsafe(await readFile(new URL(`../supabase/migrations/${migration}.sql`, import.meta.url), "utf8"));
+        }
+      }
+    }
     // Avoid non-transactional nextval changes during rollback-only verification.
     await tx.unsafe(
       "alter table public.crm_invoices alter column invoice_number set default ('TEST-'||gen_random_uuid()::text)",
@@ -187,6 +196,13 @@ try {
     await tx`select public.admin_employee_access(${bob.employee},'admin',true)`;
     await tx`select public.admin_employee_access(${bob.employee},'employee',true)`;
     await tx`select public.crm_save('clients',${client.id},${tx.json({ title: "Reassigned", status: "active", notes: "", owner_id: bob.employee, email: "", phone: "" })})`;
+    const [tracking] = await tx`select to_regprocedure('public.track_invoice_changes()') is not null as enabled`;
+    if (tracking.enabled) {
+      const [entry] = await tx`select metadata from public.audit_logs
+        where entity_type='crm_invoices' and action='invoice_history_reassigned'
+          and metadata->'after'->>'client_id'=${client.id}::text`;
+      assert.equal(entry?.metadata.after.owner_id, bob.employee);
+    }
     const [register] = await tx`select public.attendance_register((now() at time zone 'Asia/Kolkata')::date) as value`;
     assert.equal(
       register.value.items.find((row) => row.employee_id === alice.employee).checkInLocation.latitude,
