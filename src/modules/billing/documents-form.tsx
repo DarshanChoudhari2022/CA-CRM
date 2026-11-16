@@ -395,6 +395,12 @@ export function BillingDocumentForm({
           </fieldset>
         )}
         {state.error && <p role="alert">{state.error}</p>}
+        {kind === "invoice" && initial.id && !locked && (
+          <label className="field">
+            Confirm your current password to save changes
+            <input type="password" name="password" autoComplete="current-password" required maxLength={128} />
+          </label>
+        )}
         <div className="billing-toolbar">
           {!locked && (
             <>

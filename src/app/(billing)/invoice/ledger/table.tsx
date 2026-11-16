@@ -62,6 +62,14 @@ export function LedgerTable({ rows }: { rows: LedgerRow[] }) {
                 </td>
                 <td>
                   <a href={pdf}>PDF</a>
+                  {" · "}
+                  <Link href={`/invoice/ledger/${row.id}/history`}>History</Link>
+                  {row.status === "draft" && (
+                    <>
+                      {" · "}
+                      <Link href={`/invoice/raise?id=${row.id}`}>Edit draft</Link>
+                    </>
+                  )}
                   {row.status !== "draft" && row.status !== "cancelled" && (
                     <>
                       {" "}
@@ -74,7 +82,9 @@ export function LedgerTable({ rows }: { rows: LedgerRow[] }) {
                       · <Link href={`/invoice/receipts?invoice=${row.id}`}>Record payment</Link>
                     </>
                   )}
-                  {row.status === "unpaid" && <CancelInvoiceForm invoice={row.id} />}
+                  {(row.status === "draft" || row.status === "unpaid") && (
+                    <CancelInvoiceForm invoice={row.id} operation={row.status === "draft" ? "delete" : "cancel"} />
+                  )}
                 </td>
               </tr>
             );

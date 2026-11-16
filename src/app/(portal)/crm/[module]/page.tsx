@@ -181,9 +181,11 @@ export default async function CrmPage({
                 </button>
               </form>
             )}
-            {(admin || !["clients", "leads", "invoices"].includes(module)) && (
-              <RecordEditor module={module} item={item} clients={options} employees={people} admin={admin} />
-            )}
+            {module === "invoices" && item.invoice_details?.documentType !== "quotation"
+              ? item.status === "draft" && <Link href={`/invoice/raise?id=${item.id}`}>Edit invoice draft</Link>
+              : (admin || !["clients", "leads", "invoices"].includes(module)) && (
+                  <RecordEditor module={module} item={item} clients={options} employees={people} admin={admin} />
+                )}
             {module === "leads" && admin && !item.client_id && <ConvertButton id={item.id} />}
             {module === "support" && (
               <SupportTools id={item.id} admin={admin} authkey={process.env.WHATSAPP_PROVIDER === "authkey"} />

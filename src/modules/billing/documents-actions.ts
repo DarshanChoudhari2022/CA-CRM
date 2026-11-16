@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { requireCrmIdentity } from "@/modules/identity/crm";
+import { confirmedInvoiceClient } from "./confirm-invoice-password";
 import { type BillingKind, billingPath, isAdjustment, parseBillingDetails } from "./documents";
 
 const submission = z.object({
@@ -25,7 +26,7 @@ export async function saveBillingDocument(
   _: { error?: string },
   form: FormData,
 ): Promise<{ error?: string }> {
-  await requireCrmIdentity();
+  const identity = await requireCrmIdentity();
   const parsed = submission.safeParse(Object.fromEntries(form));
   if (!parsed.success) return { error: "Check the title, client, dates and source invoice." };
   const { title, notes, client_id, due_date, source_invoice_id, intent, invoice_details } = parsed.data;
@@ -59,8 +60,19 @@ export async function saveBillingDocument(
       invoice_details: result.details,
     },
   };
-  const { data, error } =
-    kind === "invoice"
+  const confirmed =
+    kind === "invoice" && id ? await confirmedInvoiceClient(identity.userId, form.get("password")) : null;
+  if (kind === "invoice" && id && !confirmed) return { error: "Could not confirm your current password. Try again." };
+  const { data, error } = confirmed
+    ? await confirmed.rpc("billing_confirmed_invoice_change", {
+        p_actor: identity.userId,
+        p_invoice: id,
+        p_action: "edit",
+        p_request: requestId,
+        p_version: version,
+        p_values: params.p_values,
+      })
+    : kind === "invoice"
       ? await client.rpc("billing_save_invoice", params)
       : await client.rpc("billing_save_document", { ...params, p_kind: kind, p_source: source_invoice_id ?? null });
   if (error) {
