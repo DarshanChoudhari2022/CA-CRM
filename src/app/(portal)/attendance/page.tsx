@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/a11y/noRedundantRoles: Preserve attendance table semantics when its rows use CSS grid on mobile. */
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { PageHead } from "@/components/page-head";
@@ -73,25 +74,44 @@ export default async function AttendancePage({ searchParams }: { searchParams: P
             </button>
           </form>
         </div>
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Day</th>
-                <th>Check-in</th>
-                <th>Check-out</th>
-                <th>Hours</th>
-                <th>Result</th>
-                <th>Correction</th>
+        <div className="table-wrap attendance-history">
+          <table role="table" aria-label="Monthly attendance history">
+            <thead role="rowgroup">
+              <tr role="row">
+                <th scope="col" role="columnheader">
+                  Date
+                </th>
+                <th scope="col" role="columnheader">
+                  Day
+                </th>
+                <th scope="col" role="columnheader">
+                  Check-in
+                </th>
+                <th scope="col" role="columnheader">
+                  Check-out
+                </th>
+                <th scope="col" role="columnheader">
+                  Hours
+                </th>
+                <th scope="col" role="columnheader">
+                  Result
+                </th>
+                <th scope="col" role="columnheader">
+                  Correction
+                </th>
               </tr>
             </thead>
-            <tbody>
+            <tbody role="rowgroup">
               {days.map((day) => (
-                <tr key={day.date}>
-                  <td>{day.date}</td>
-                  <td>{day.context.replaceAll("_", " ")}</td>
-                  <td>
+                <tr role="row" key={day.date}>
+                  <td role="cell">
+                    <strong>{day.date}</strong>
+                  </td>
+                  <td role="cell">{day.context.replaceAll("_", " ")}</td>
+                  <td role="cell">
+                    <span className="attendance-history-label" aria-hidden="true">
+                      Check-in
+                    </span>
                     {day.checkIn ?? "—"}
                     {day.checkIn && (
                       <div>
@@ -100,7 +120,10 @@ export default async function AttendancePage({ searchParams }: { searchParams: P
                     )}
                     {day.isLate && <small style={{ color: "var(--amber)", marginLeft: 6 }}>Late</small>}
                   </td>
-                  <td>
+                  <td role="cell">
+                    <span className="attendance-history-label" aria-hidden="true">
+                      Check-out
+                    </span>
                     {day.checkOut ?? "—"}
                     {day.checkOut && (
                       <div>
@@ -108,11 +131,21 @@ export default async function AttendancePage({ searchParams }: { searchParams: P
                       </div>
                     )}
                   </td>
-                  <td>{day.duration}</td>
-                  <td>
+                  <td role="cell">
+                    <span className="attendance-history-label" aria-hidden="true">
+                      Hours
+                    </span>
+                    {day.duration}
+                  </td>
+                  <td role="cell" className="attendance-history-result">
                     <StatusPill value={day.result} />
                   </td>
-                  <td>{day.correctionStatus ? <StatusPill value={day.correctionStatus} /> : "—"}</td>
+                  <td role="cell">
+                    <span className="attendance-history-label" aria-hidden="true">
+                      Correction
+                    </span>
+                    {day.correctionStatus ? <StatusPill value={day.correctionStatus} /> : "—"}
+                  </td>
                 </tr>
               ))}
             </tbody>

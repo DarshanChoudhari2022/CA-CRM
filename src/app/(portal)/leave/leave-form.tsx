@@ -22,7 +22,7 @@ export function LeaveForm({ types, joinedOn }: { types: Array<{ id: string; name
     };
   }, {});
   return (
-    <form action={action} className="card">
+    <form action={action} className="card leave-form">
       <div className="section-title">
         <h2>Request leave</h2>
       </div>
@@ -32,7 +32,7 @@ export function LeaveForm({ types, joinedOn }: { types: Array<{ id: string; name
         </div>
       )}
       {state.success && (
-        <div className="status status-green" role="status">
+        <div className="form-success" role="status">
           {state.success}
         </div>
       )}

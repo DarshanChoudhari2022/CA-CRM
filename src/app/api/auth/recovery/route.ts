@@ -1,9 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { isSameOrigin } from "@/lib/request-origin";
 import { createClient } from "@/lib/supabase/server";
 export async function POST(request: NextRequest) {
-  if (request.headers.get("origin") !== request.nextUrl.origin)
-    return NextResponse.json({ error: "Invalid origin." }, { status: 403 });
+  if (!isSameOrigin(request)) return NextResponse.json({ error: "Invalid origin." }, { status: 403 });
   const parsed = z.object({ email: z.email().max(320) }).safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Enter your work email." }, { status: 400 });
   const appUrl = process.env.NEXT_PUBLIC_APP_URL;

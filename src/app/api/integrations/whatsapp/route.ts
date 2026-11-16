@@ -1,5 +1,11 @@
 import { z } from "zod";
-import { boundedBody, secretMatches, verifySignature } from "@/modules/crm/automation/security";
+import {
+  boundedBody,
+  parseWebhookJson,
+  secretMatches,
+  verifySignature,
+  WebhookBodyError,
+} from "@/modules/crm/automation/security";
 import { automationOrganization, automationStore, ingest } from "@/modules/crm/automation/store";
 
 const payloadSchema = z.object({
@@ -31,6 +37,11 @@ const payloadSchema = z.object({
     }),
   ),
 });
+const receiptPredecessors = new Map([
+  ["delivered", ["sending", "accepted", "uncertain"]],
+  ["read", ["sending", "accepted", "delivered", "uncertain"]],
+  ["failed", ["sending", "accepted", "uncertain"]],
+]);
 
 export async function GET(request: Request) {
   const query = new URL(request.url).searchParams;
@@ -46,8 +57,9 @@ export async function POST(request: Request) {
     const raw = await boundedBody(request);
     if (!verifySignature(raw, request.headers.get("x-hub-signature-256"), process.env.WHATSAPP_APP_SECRET))
       return Response.json({ error: "Invalid signature" }, { status: 401 });
-    const payload = payloadSchema.parse(JSON.parse(raw));
-    for (const entry of payload.entry)
+    const payload = payloadSchema.safeParse(parseWebhookJson(raw));
+    if (!payload.success) return Response.json({ error: "Invalid event payload" }, { status: 400 });
+    for (const entry of payload.data.entry)
       for (const change of entry.changes) {
         const v = change.value;
         if (v.metadata.phone_number_id !== process.env.WHATSAPP_PHONE_NUMBER_ID) continue;
@@ -65,12 +77,8 @@ export async function POST(request: Request) {
           );
         }
         for (const status of v.statuses ?? []) {
-          const predecessors: Record<string, string[]> = {
-            delivered: ["sending", "accepted", "uncertain"],
-            read: ["sending", "accepted", "delivered", "uncertain"],
-            failed: ["sending", "accepted", "uncertain"],
-          };
-          if (!predecessors[status.status]) continue;
+          const predecessors = receiptPredecessors.get(status.status);
+          if (!predecessors) continue;
           const receipt = await automationStore()
             .from("crm_delivery_receipts")
             .upsert(
@@ -84,12 +92,13 @@ export async function POST(request: Request) {
             .eq("organization_id", automationOrganization())
             .eq("channel", "whatsapp")
             .eq("provider_id", status.id)
-            .in("status", predecessors[status.status]);
+            .in("status", predecessors);
           if (error) throw new Error("Receipt persistence failed");
         }
       }
     return Response.json({ received: true });
-  } catch {
+  } catch (error) {
+    if (error instanceof WebhookBodyError) return Response.json({ error: error.message }, { status: error.status });
     return Response.json({ error: "Webhook not processed; retry required" }, { status: 503 });
   }
 }

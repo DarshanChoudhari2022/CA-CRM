@@ -1,7 +1,7 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.5.15/schema.json",
   "files": {
-    "includes": ["**", "!**/.next", "!**/coverage", "!**/supabase/.temp"]
+    "includes": ["**", "!**/.next", "!**/coverage", "!**/supabase/.temp", "!tmp", "!output"]
   },
   "formatter": {
     "enabled": true,

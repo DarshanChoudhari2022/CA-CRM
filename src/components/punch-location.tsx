@@ -7,7 +7,7 @@ export function PunchLocation({ value }: { value?: Location | null }) {
       href={`https://www.google.com/maps?q=${value.latitude},${value.longitude}`}
       target="_blank"
       rel="noreferrer"
-      className="stat-note"
+      className="stat-note attendance-link"
     >
       View location <small>(±{Math.round(value.accuracy)} m)</small>
     </a>

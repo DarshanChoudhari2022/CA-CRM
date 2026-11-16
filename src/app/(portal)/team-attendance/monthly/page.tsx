@@ -61,6 +61,7 @@ export default async function MonthlyAttendance({
       />
       <section className="card">
         <form className="register-filters" method="get">
+          {employee && <input type="hidden" name="employee" value={employee.employee_code} />}
           <label>
             Month
             <input type="month" name="month" defaultValue={month} max={currentMonth} required />
@@ -197,7 +198,13 @@ async function EmployeeCalendar({
           <span className="status status-green">{employee.presentDays} present</span>{" "}
           <span className="status status-red">{employee.absentDays} absent</span>
         </p>
-        {canEdit && <p>Select the boxes on missed days to enter attendance in bulk.</p>}
+        {canEdit && !pending?.error && (
+          <p>
+            {days.some((day) => day.editable)
+              ? "Select only dates the employee worked but missed marking attendance."
+              : "No missed dates are eligible for manual attendance this month."}
+          </p>
+        )}
         {pending?.error && (
           <p className="form-error" role="alert">
             Could not check pending corrections. Refresh before editing.

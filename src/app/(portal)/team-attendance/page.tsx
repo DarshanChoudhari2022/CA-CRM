@@ -203,6 +203,17 @@ export default async function TeamAttendance({
                       </td>
                       {administrator && (
                         <td>
+                          {row.employee_id !== identity.employeeId && (
+                            <Link
+                              className="attendance-link"
+                              href={`/team-attendance/monthly?${new URLSearchParams({
+                                month: filters.date.slice(0, 7),
+                                employee: row.employee_code,
+                              })}#bulk-attendance`}
+                            >
+                              Mark missed dates in bulk
+                            </Link>
+                          )}
                           <details>
                             <summary>Daily work</summary>
                             {workDetails?.some(({ error }) => error) ? (

@@ -1,0 +1,239 @@
+.split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+  gap: 1.25rem;
+  align-items: start;
+}
+.form,
+.form fieldset,
+.item {
+  display: grid;
+  gap: 0.8rem;
+  min-width: 0;
+}
+.form legend {
+  padding: 0 0.45rem;
+  font-weight: 650;
+}
+.form label {
+  display: grid;
+  gap: 0.3rem;
+  min-width: 0;
+  font-size: 0.875rem;
+  font-weight: 550;
+}
+.form input,
+.form select,
+.form textarea {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  background: #fff;
+  color: var(--ink);
+  padding: 0.55rem 0.65rem;
+}
+.form :is(input, select, textarea):focus-visible {
+  outline: 2px solid var(--gold-accent);
+  outline-offset: 1px;
+}
+.form button:disabled {
+  opacity: 0.65;
+  cursor: default;
+}
+.fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 8rem), 1fr));
+  gap: 0.65rem;
+}
+.item {
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 0.9rem;
+}
+.item button {
+  justify-self: start;
+}
+.preview {
+  position: sticky;
+  top: 1rem;
+  min-width: 0;
+  background: var(--pale);
+  padding: clamp(0.65rem, 2vw, 1.25rem);
+  border-radius: 0.8rem;
+  color: var(--ink);
+}
+.previewLabel {
+  margin: 0 0 0.7rem;
+  font-size: 0.875rem;
+  font-weight: 650;
+}
+.paper {
+  min-height: 34rem;
+  padding: clamp(0.8rem, 2vw, 1.6rem);
+  background: white;
+  border-radius: 0.25rem;
+  box-shadow: 0 2px 9px #102d4015;
+  overflow-wrap: anywhere;
+}
+.paperHeader,
+.paperDetails {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: start;
+  gap: 0.7rem;
+  margin-bottom: 1.3rem;
+}
+.paperHeader {
+  border-bottom: 2px solid var(--document-accent);
+  padding-bottom: 0.9rem;
+}
+.paperHeader > div:first-child {
+  flex: 1 1 12rem;
+}
+.issuer {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+}
+.issuer img {
+  flex: none;
+  object-fit: contain;
+}
+.paperHeader > div:last-child {
+  margin-left: auto;
+  text-align: right;
+}
+.paperHeader p {
+  margin: 0.3rem 0 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  white-space: pre-wrap;
+}
+.paper[data-layout="modern"] {
+  border-top: 5px solid var(--document-accent);
+}
+.paper[data-layout="classic"] {
+  border-top: 2px solid var(--gold);
+}
+.paper[data-layout="classic"] .paperHeader strong {
+  font-family: Georgia, serif;
+}
+.paper[data-layout="minimal"] .paperHeader {
+  border-color: var(--line);
+}
+.paperHeader h2 {
+  margin: 0 0 0.25rem;
+  color: var(--ink-2);
+  font-size: 1.2rem;
+}
+.paperDetails > div {
+  display: grid;
+  gap: 0.2rem;
+  white-space: pre-line;
+}
+.paperDetails dl,
+.totals {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 0.35rem 0.8rem;
+  margin: 0;
+}
+.paperDetails,
+.paper table,
+.totals {
+  font-size: 0.8rem;
+}
+.paper dd {
+  margin: 0;
+  text-align: right;
+}
+.caption,
+.paper dt {
+  color: var(--muted);
+}
+.status {
+  display: inline-block;
+  border-radius: 0.75rem;
+  padding: 0.15rem 0.55rem;
+  background: var(--pale);
+  color: var(--ink-2);
+  font-size: 0.75rem;
+  text-transform: capitalize;
+}
+.scroll {
+  overflow-x: auto;
+}
+.paper table {
+  width: 100%;
+  min-width: 19rem;
+  border-collapse: collapse;
+}
+.paper th,
+.paper td {
+  padding: 0.5rem 0.35rem;
+  border-bottom: 1px solid var(--line);
+  text-align: right;
+  vertical-align: top;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.paper th {
+  background: var(--pale);
+}
+.paper[data-layout="modern"] th {
+  background: #102d40;
+  color: white;
+}
+.paper[data-layout="minimal"] th {
+  background: white;
+}
+.paper th:first-child,
+.paper td:first-child {
+  text-align: left;
+  width: auto;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.paper small {
+  display: block;
+  color: var(--muted);
+}
+.totals {
+  min-width: min(100%, 12rem);
+  width: max-content;
+  margin: 1rem 0 0 auto;
+  font-variant-numeric: tabular-nums;
+}
+.totals > :nth-last-child(-n + 2) {
+  border-top: 1px solid var(--line);
+  padding-top: 0.45rem;
+}
+.notes,
+.paperFooter {
+  white-space: pre-wrap;
+  font-size: 0.8rem;
+  margin-top: 1.25rem;
+}
+.notes h4 {
+  margin: 0 0 0.25rem;
+}
+.notes p {
+  margin: 0;
+}
+.paperFooter {
+  border-top: 1px solid var(--line);
+  padding-top: 0.75rem;
+  color: var(--muted);
+}
+@media (max-width: 1050px) {
+  .split {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .preview {
+    position: static;
+  }
+}
+.documentStatus {
+  text-transform: capitalize;
+}

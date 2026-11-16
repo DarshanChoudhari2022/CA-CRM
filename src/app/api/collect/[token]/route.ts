@@ -1,12 +1,18 @@
 import { createHash } from "node:crypto";
 import { automationStore } from "@/modules/crm/automation/store";
-import { documentType } from "@/modules/crm/documents";
+import { collectionFileLimit, collectionRequestLimit, documentType } from "@/modules/crm/documents";
 
 export async function POST(request: Request, { params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   if (!/^[a-f0-9]{64}$/.test(token)) return new Response("Not found", { status: 404 });
   const url = new URL(`/collect/${token}`, request.url);
+  const contentType = request.headers.get("content-type") ?? "";
+  if (Number(request.headers.get("content-length")) > collectionRequestLimit) {
+    url.searchParams.set("result", "too-large");
+    return Response.redirect(url, 303);
+  }
   try {
+    if (!/^multipart\/form-data\s*;/i.test(contentType)) throw new Error("Multipart file required");
     const reader = request.body?.getReader();
     if (!reader) throw new Error("No file");
     const chunks: Uint8Array[] = [];
@@ -15,17 +21,22 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
       const { done, value } = await reader.read();
       if (done) break;
       size += value.byteLength;
-      if (size > 11 * 1024 * 1024) {
-        await reader.cancel();
-        throw new Error("Too large");
+      if (size > collectionRequestLimit) {
+        await reader.cancel().catch(() => {});
+        url.searchParams.set("result", "too-large");
+        return Response.redirect(url, 303);
       }
       chunks.push(value);
     }
     const form = await new Response(Buffer.concat(chunks), {
-      headers: { "Content-Type": request.headers.get("content-type") ?? "" },
+      headers: { "Content-Type": contentType },
     }).formData();
     const file = form.get("file");
     if (!(file instanceof File)) throw new Error("File required");
+    if (file.size > collectionFileLimit) {
+      url.searchParams.set("result", "too-large");
+      return Response.redirect(url, 303);
+    }
     const type = documentType(file.name, file.size),
       bytes = Buffer.from(await file.arrayBuffer());
     const magic =

@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { PageHead } from "@/components/page-head";
 import { StatusPill } from "@/components/status-pill";
@@ -42,11 +41,6 @@ export default async function EmployeesPage() {
         eyebrow="People"
         title="Employee directory"
         description="Change account roles and reporting managers separately. Only administrators can make these changes."
-        action={
-          <Link href="/crm/invoices?create=1" className="button button-primary">
-            Create invoice / PDF
-          </Link>
-        }
       />
       <section className="card">
         <div className="section-title">

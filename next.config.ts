@@ -4,7 +4,10 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   experimental: { typedEnv: true },
   turbopack: { root: process.cwd() },
-  outputFileTracingIncludes: { "/crm/invoices/*/pdf": ["./assets/invoices/**/*"] },
+  outputFileTracingIncludes: {
+    "/crm/invoices/*/pdf": ["./assets/invoices/**/*", "./public/brand/ca-india-logo.png"],
+    "/invoice/*/*/pdf": ["./assets/invoices/**/*", "./public/brand/ca-india-logo.png"],
+  },
   async headers() {
     return [
       {

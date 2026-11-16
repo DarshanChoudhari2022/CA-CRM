@@ -190,6 +190,54 @@ a {
   min-height: 96px;
   resize: vertical;
 }
+.field {
+  min-width: 0;
+}
+.field :is(input:not([type="checkbox"], [type="radio"]), select, textarea) {
+  min-width: 0;
+  max-width: 100%;
+}
+.leave-form input[type="date"] {
+  width: 100%;
+}
+.leave-requests {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.leave-requests li {
+  padding-block: 14px;
+  border-top: 1px solid var(--line);
+  overflow-wrap: anywhere;
+}
+.leave-request-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+.leave-requests p {
+  margin: 6px 0 0;
+}
+.leave-requests form {
+  margin-top: 10px;
+}
+.leave-form .form-success {
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #eaf8f1;
+  color: var(--green);
+  overflow-wrap: anywhere;
+}
+@media (max-width: 720px) {
+  .leave-form :is(input, select, textarea) {
+    font-size: 16px;
+  }
+  .leave-form > button {
+    width: 100%;
+  }
+}
 .button {
   border: 0;
   border-radius: 10px;
@@ -670,7 +718,7 @@ tbody tr:last-child td {
   }
   .grid-4,
   .grid-2 {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

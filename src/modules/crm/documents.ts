@@ -1,3 +1,6 @@
+export const collectionFileLimit = 4_000_000;
+export const collectionRequestLimit = 4_400_000;
+
 export const documentMimeTypes = {
   pdf: "application/pdf",
   jpg: "image/jpeg",

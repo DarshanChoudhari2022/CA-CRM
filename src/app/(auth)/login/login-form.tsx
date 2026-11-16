@@ -21,13 +21,15 @@ export function LoginForm({ audience = "employee" }: { audience?: "admin" | "emp
             body: JSON.stringify({ email: form.get("email"), password: form.get("password"), audience }),
           });
           const body = await response.json();
-          if (!response.ok) setError(body.error ?? "We could not sign you in.");
-          else window.location.assign(body.redirectTo);
+          if (response.ok) {
+            window.location.assign(body.redirectTo);
+            return;
+          }
+          setError(body.error ?? "We could not sign you in.");
         } catch {
           setError("The sign-in service could not be reached. Try again.");
-        } finally {
-          setPending(false);
         }
+        setPending(false);
       }}
     >
       <div className="auth-form-topline">

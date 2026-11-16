@@ -85,7 +85,22 @@ try {
       { ...values, client_id: foreign.id, invoice_details: { ...details, reference: "FOREIGN" } },
       "tenant scope is preserved",
     );
-    await save({ ...values, status: "issued" }, id);
+    const [confirmation] =
+      await tx`select to_regprocedure('public.billing_confirmed_invoice_change(uuid,uuid,text,text,uuid,timestamptz,jsonb)') is not null as installed`;
+    if (confirmation.installed) {
+      await denied({ ...values, status: "issued" }, "direct writes cannot bypass confirmation", id);
+      const [draft] = await tx`select updated_at::text as version from public.crm_invoices where id=${id}`;
+      await tx.unsafe("set local role service_role");
+      await tx`select public.billing_confirmed_invoice_change(${admin},${id},'edit',null,${randomUUID()},${draft.version}::text::timestamptz,${sql.json(
+        {
+          ...values,
+          status: "issued",
+        },
+      )})`;
+      await tx.unsafe("set local role authenticated");
+    } else {
+      await save({ ...values, status: "issued" }, id);
+    }
     await denied(
       { ...values, status: "issued", title: "Changed service after issue" },
       "issued printed service cannot change",
@@ -96,7 +111,11 @@ try {
       "issued billing details are immutable",
       id,
     );
-    await save({ ...values, status: "issued", notes: "Internal note updated" }, id);
+    if (confirmation.installed) {
+      await denied({ ...values, status: "issued", notes: "Internal note updated" }, "issued notes are locked", id);
+    } else {
+      await save({ ...values, status: "issued", notes: "Internal note updated" }, id);
+    }
     const legacy = await save({
       title: "Legacy",
       status: "issued",
@@ -105,10 +124,16 @@ try {
       amount: 100,
       notes: "",
     });
-    await save(
-      { title: "Legacy", status: "issued", owner_id: "", client_id: client.id, amount: 100, notes: "Still supported" },
-      legacy,
-    );
+    const legacyEdit = {
+      title: "Legacy",
+      status: "issued",
+      owner_id: "",
+      client_id: client.id,
+      amount: 100,
+      notes: "Still supported",
+    };
+    if (confirmation.installed) await denied(legacyEdit, "legacy issued invoices are protected", legacy);
+    else await save(legacyEdit, legacy);
     await setTestIdentity(tx, employee);
     await denied(
       { ...values, invoice_details: { ...details, reference: "EMPLOYEE" } },

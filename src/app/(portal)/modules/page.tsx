@@ -1,4 +1,4 @@
-import { ArrowRight, CalendarCheck, Layers3 } from "lucide-react";
+import { ArrowRight, CalendarCheck, Layers3, Receipt } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { PageHead } from "@/components/page-head";
@@ -29,6 +29,14 @@ export default async function ModulesPage() {
           <p>Client records and firm operations.</p>
           <span>
             Open CRM <ArrowRight size={16} />
+          </span>
+        </Link>
+        <Link href="/invoice" className="card workspace-card">
+          <Receipt size={28} />
+          <h2>Invoice</h2>
+          <p>Billing, receipts and client balances.</p>
+          <span>
+            Open Invoice <ArrowRight size={16} />
           </span>
         </Link>
       </section>

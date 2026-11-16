@@ -2,10 +2,47 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { PDFDocument } from "pdf-lib";
 import QRCode from "qrcode";
 import { afterEach, expect, it, vi } from "vitest";
-import { defaultInvoiceDetails, invoiceTotals } from "./invoice-details";
+import { defaultInvoiceDetails, documentLayouts, documentPresentationSchema, invoiceTotals } from "./invoice-details";
 import { generateInvoicePdf } from "./invoice-pdf";
 
 afterEach(() => vi.restoreAllMocks());
+
+it.each(Object.keys(documentLayouts))(
+  "exports the %s layout with saved presentation and paginated terms",
+  async (layout) => {
+    const details = defaultInvoiceDetails("Advisory services", 54000, "2026-11-12");
+    details.presentation = documentPresentationSchema.parse({
+      layout,
+      issuer: "Demo Chartered Accountants",
+      issuerDetails: "Pune, Maharashtra\naccounts@example.invalid",
+      recipient: "Example Industries Pvt Ltd",
+      payment: "Quote the invoice number when paying by bank transfer.",
+      signatory: "Demo Partner",
+      terms: "Payment is due within seven calendar days. ".repeat(67),
+      footer: "Thank you for your business.",
+    });
+    const bytes = await generateInvoicePdf({
+      number: "PSB/004",
+      title: "Advisory services",
+      status: "draft",
+      createdAt: details.invoiceDate,
+      dueDate: "2026-11-19",
+      client: { title: "Demo client" },
+      amount: 54000,
+      received: 0,
+      notes: "October advisory engagement.",
+      details: JSON.parse(JSON.stringify(details)),
+    });
+    const pdf = await PDFDocument.load(bytes);
+    expect(pdf.getAuthor()).toBe("Demo Chartered Accountants");
+    expect(pdf.getPage(0).getWidth()).toBeCloseTo(595.28);
+    expect(pdf.getPageCount()).toBeGreaterThan(1);
+    if (process.env.INVOICE_RENDER_PREVIEWS === "1") {
+      await mkdir("output/pdf", { recursive: true });
+      await writeFile(`output/pdf/invoice-presentation-${layout}.pdf`, bytes);
+    }
+  },
+);
 
 it("generates a valid paginated PDF for long notes and unsupported glyphs", async () => {
   const bytes = await generateInvoicePdf({

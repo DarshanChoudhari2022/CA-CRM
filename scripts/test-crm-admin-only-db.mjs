@@ -329,7 +329,6 @@ try {
           `${role}: retained download allowed`,
         );
         await tx`select public.crm_save('tasks',${records.tasks},${db.json({ title: "Reviewed", status: "todo", client_id: client.id, owner_id: users.employee.employee })})`;
-        await tx`select public.crm_save('invoices',${records.invoices},${db.json({ title: "Assigned fixture", status: "issued", client_id: client.id, owner_id: users.employee.employee, amount: 1000 })})`;
         const uploadId = randomUUID();
         const [upload] =
           await tx`select public.crm_reserve_document(${uploadId},${records.documents},'admin.png','image/png',68) as value`;
